@@ -274,7 +274,7 @@ function migrate(s){
 function load(hot){
   try{const raw=localStorage.getItem(KEY);if(raw){const s=migrate(JSON.parse(raw));if(s)return s;}}catch(e){}
   const h=hot&&migrate(hot.state);if(h)return h;
-  return fresh(true);
+  return fresh(false);
 }
 let state,view='judge';
 const ui={team:null,prob:null,answer:'',msg:null,armed:null,lastSeen:null,sig:'',restore:false,copyText:'',zoom:null};
@@ -358,6 +358,15 @@ function preview(d,ti,p){
   return {pts,mult,k:R.solves.length,pct:R.nextPct,sweep:wouldSweep(d,ti,p)};
 }
 
+function isBlank(){return !state.events.length&&!state.problems.some(p=>(p.text||'').trim()||(p.answer||'').trim());}
+function loadSample(game){
+  const s=fresh(true);
+  state.problems=s.problems;state.sampleProblems=true;
+  while(nW()<3)S().waves.push((S().waves[S().waves.length-1]||0)+12);
+  if(game){state.events=s.events;state.seq=s.seq;state.timer=s.timer;state.openedAt={};state.sample=true;ui.lastSeen=s.seq;}
+  ui.prob=null;ui.team=null;ui.msg={t:'ok',s:game?'Sample game loaded: 16 problems and 9 minutes of play.':'Sample problems loaded.'};
+  commit();
+}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}try{bc&&bc.postMessage(state);}catch(e){}}
 function commit(rerender=true){save();if(rerender)render();}
 function addEvent(e){e.id=++state.seq;state.events.push(e);return e;}
@@ -508,9 +517,10 @@ function setupView(){
     fld('Wrong answer penalty','penalty',s.penalty,'Off for now. Set to 5 to bring it back.')+
     fld('Event length (min)','duration',s.duration,'')+
   '</div></div>';
-  return '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems and answer key</h2><div class="row"><button data-act="addp">Add problem</button><button data-act="sampleprobs">'+arm('sampleprobs','Load sample problems','Click again: replaces all problems')+'</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Problems with the same topic form a sweep group. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Wave</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="6" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
+  return '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems and answer key</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Problems with the same topic form a sweep group. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Wave</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="6" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
   '<div class="cols" style="margin-top:20px"><div>'+scoring+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Waves</h2><button data-act="addw">Add wave</button></div><p class="sub">Times count from the start of the event. Removing a wave moves its problems to the wave before.</p><div class="scroll"><table><tbody>'+waves+'</tbody></table></div></div></div>'+
   '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game keeps your teams, problems, answer key and rules, and clears scores, timer and waves.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
+  '<div class="card"><h2>Sample data</h2><p class="sub" style="margin-top:0">For trying the app out. Both replace your problems; your teams and scoring rules stay.</p><div class="row"><button data-act="samplegame">'+arm('samplegame','Load sample game','Click again: replaces problems and scores')+'</button><button data-act="sampleprobs">'+arm('sampleprobs','Load sample problems only','Click again: replaces all problems')+'</button></div><p class="sub">The sample game is 16 problems with 9 minutes of play already recorded. Problems only keeps your current scores.</p></div>'+
   '<div class="card"><h2>Teams</h2><p class="sub" style="margin-top:0">Named after the playing cards kids draw at the door.</p><table><tbody>'+teams+'</tbody></table></div></div></div>';
 }
 
@@ -518,7 +528,7 @@ function render(){
   const v=view;
   document.body.classList.toggle('proj',PROJ.includes(v));
   document.querySelectorAll('nav a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-  document.getElementById('sample').innerHTML=state.sample&&!PROJ.includes(v)?'<div class="sample"><span>A sample game is loaded so you can see the board working. Clear it before the real thing.</span><button data-act="newgame2">Clear sample scores and start fresh</button></div>':'';
+  document.getElementById('sample').innerHTML=PROJ.includes(v)?'':state.sample?'<div class="sample"><span>A sample game is loaded so you can see the board working. Clear it before the real thing.</span><button data-act="newgame2">Clear sample scores and start fresh</button></div>':isBlank()?'<div class="sample"><span>No problems or answers yet. Add yours in Setup, or try the app with sample data.</span><button data-act="samplegame2">Load sample game</button></div>':'';
   const m=document.getElementById('main');
   m.innerHTML=v==='projector'?projView():v==='log'?logView():v==='setup'?setupView():judgeView();
   if(v!=='setup'){const pr=typeset(m);fit();if(pr)pr.then(fit);}
@@ -622,7 +632,9 @@ document.addEventListener('click',e=>{
   else if(a==='up'||a==='down'){const i=+b.dataset.i,j=a==='up'?i-1:i+1,P=state.problems;if(j>=0&&j<P.length){[P[i],P[j]]=[P[j],P[i]];keepScroll(()=>commit());}}
   else if(a==='addw'){const W=state.settings.waves,last=W[W.length-1]||0;W.push(Math.min(state.settings.duration,last+10));keepScroll(()=>commit());}
   else if(a==='delw'){const w=+b.dataset.w;state.settings.waves.splice(w-1,1);state.problems.forEach(p=>{if(p.wave>=w)p.wave=Math.max(1,p.wave-1);});const oa={};for(const k in state.openedAt){const x=+k;if(x<w)oa[x]=state.openedAt[k];else if(x>w)oa[x-1]=state.openedAt[k];}state.openedAt=oa;keepScroll(()=>commit());}
-  else if(a==='sampleprobs')keepScroll(()=>arm('sampleprobs',()=>{state.problems=sampleProblems();while(nW()<3)state.settings.waves.push(state.settings.waves[state.settings.waves.length-1]+12);state.sampleProblems=true;ui.prob=null;commit();}));
+  else if(a==='sampleprobs')keepScroll(()=>arm('sampleprobs',()=>loadSample(false)));
+  else if(a==='samplegame')keepScroll(()=>arm('samplegame',()=>loadSample(true)));
+  else if(a==='samplegame2')loadSample(true);
 });
 document.addEventListener('input',e=>{if(e.target.id==='ans')ui.answer=e.target.value;});
 document.addEventListener('keydown',e=>{

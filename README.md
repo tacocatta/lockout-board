@@ -45,7 +45,7 @@ The active rules are listed on the projector under the leaderboard.
 - Accept more than one answer by separating them with `|`, for example `Sunday|sun`.
 - Problems that share a topic name form a sweep group.
 - Add, delete and reorder problems freely, and add as many waves as you like. Board numbers follow the order in Setup.
-- The app comes with 16 sample problems (answers checked) for testing. Replace them before the real event.
+- To try it out, use **Setup → Sample data**: **Load sample game** fills the board with 16 sample problems (answers checked) and a game already in progress, and **Load sample problems only** keeps your current scores.
 
 ## Data
 

@@ -27,6 +27,12 @@ input,select{font-size:16px;border:1px solid var(--line);background:var(--panel)
 .prime{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .good{background:var(--ok);color:#fff;border-color:var(--ok)}
 .warnb{background:var(--bad);color:#fff;border-color:var(--bad)}
+header .brand{margin-right:0}
+.bsel{display:flex;align-items:center;gap:8px;margin-right:auto;font-size:14px;color:var(--mute)}
+.bsel select{width:auto;max-width:260px;min-height:40px;padding:6px 10px;font-weight:600;color:var(--ink)}
+.tot{margin-left:auto;padding-left:10px;font-size:.8em;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}
+.bt td{vertical-align:middle}
+.cur{font-weight:800;font-size:14px}
 header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:12px max(3vw,16px);border-bottom:2px solid var(--ink);background:var(--bg)}
 .brand{font-weight:900;font-size:22px;letter-spacing:-.02em;margin-right:auto}
 nav{display:flex;flex-wrap:wrap;gap:6px}
@@ -120,13 +126,13 @@ mjx-container[display=true]{margin:.4em 0 !important}
 .qcard{display:flex;flex-direction:column;gap:10px;text-align:left;font-weight:400;border:2px solid var(--ink);border-top:10px solid var(--tc,var(--ink));border-radius:12px;padding:12px 16px 14px;background:var(--panel);min-height:0}
 .qcard.done{opacity:.45}
 .pboard{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:10px;--qf:18px;flex:1;min-height:0}
-.pcard{display:flex;flex-direction:column;gap:8px;text-align:left;font-weight:400;border:2px solid var(--ink);border-radius:12px;padding:10px 14px 12px;background:var(--panel);min-height:0;position:relative;overflow:hidden}
+.pcard{display:flex;flex-direction:column;gap:6px;text-align:left;font-weight:400;border:2px solid var(--ink);border-radius:12px;padding:8px 12px 10px;background:var(--panel);min-height:0;position:relative;overflow:hidden}
 .pcard .qc-top{color:inherit;opacity:1}
 .pcard .qc-top span:not(.qpts){opacity:.75}
 .pcard .qc-top b,.pcard .qc-top .qpts{color:inherit}
 .pcard .qc-top span:not(.qpts):not(.btag){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:max(12px,calc(var(--qf)*.62))}
-.pcard .qc-top b{font-size:calc(var(--qf)*1.25)}
-.pcard .qc-top .qpts{font-size:calc(var(--qf)*1.05)}
+.pcard .qc-top b{font-size:max(16px,calc(var(--qf)*1.05))}
+.pcard .qc-top .qpts{font-size:max(15px,calc(var(--qf)*.95))}
 .pcard .qc-text{font-size:var(--qf);line-height:1.32;flex:1;min-height:0;overflow:hidden}
 .pchip{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.92);color:#121418;border-radius:6px;padding:1px 7px}
 .pchip i{width:10px;height:10px;border-radius:2px;display:block}
@@ -159,6 +165,8 @@ mjx-container[display=true]{margin:.4em 0 !important}
 .zcard .qc-st{font-size:clamp(16px,1.4vw,22px)}
 .pjbar{position:fixed;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;opacity:.3;z-index:9}
 .pjbar:hover,.pjbar:focus-within{opacity:1}
+body.idle .pjbar{opacity:0;pointer-events:none}
+body.idle.proj{cursor:none}
 .pjbar button{min-height:36px;padding:4px 10px;font-size:13px}
 .pjbar button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
 .cell[data-act]{cursor:zoom-in}
@@ -168,18 +176,18 @@ mjx-container[display=true]{margin:.4em 0 !important}
 .btag{flex:none;font-weight:900;background:var(--acc);color:#fff;border-radius:6px;padding:0 6px;font-size:max(12px,calc(var(--qf)*.7));white-space:nowrap}
 .pcard .qc-top .btag{margin-left:auto}
 .pcard .qc-top .btag+.qpts{margin-left:6px}
-.pjside{display:flex;flex-direction:column;gap:16px;min-height:0}
+.pjside{display:flex;flex-direction:column;gap:16px;min-height:0;padding-bottom:40px}
 .rules{display:grid;gap:6px;font-size:clamp(13px,.95vw,16px);color:var(--mute);border-top:2px solid var(--line);padding-top:10px}
 .rules span{line-height:1.3}
 .settings small{display:block;font-size:13px;color:var(--mute);line-height:1.35}
 /* projector */
 body.proj header,body.proj .sample{display:none}
-body.proj main{max-width:none;padding:18px 2.5vw;height:100%}
-.pj{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:16px 28px;height:100%}
+body.proj main{max-width:none;padding:14px 2vw;height:100%}
+.pj{display:grid;grid-template-columns:minmax(0,3.6fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:16px 28px;height:100%}
 .pj-top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;border-bottom:3px solid var(--ink);padding-bottom:10px}
-.pj-title{font-weight:900;font-size:clamp(32px,4vw,56px);letter-spacing:-.03em;line-height:1.05;margin:0}
+.pj-title{font-weight:900;font-size:clamp(26px,min(4vw,5.5vh),56px);letter-spacing:-.03em;line-height:1.05;margin:0}
 .pj-clock{text-align:right}
-.pj-clock .clock{font-size:clamp(48px,7vw,104px);line-height:.95}
+.pj-clock .clock{font-size:clamp(40px,min(7vw,10vh),104px);line-height:.95}
 .pj-clock .hint{font-size:clamp(14px,1.3vw,20px);display:block}
 .pj .lb .bar{height:clamp(32px,4.2vh,48px)}
 .pj .lbr .sc{font-size:clamp(20px,2vw,32px)}
@@ -198,6 +206,7 @@ body.proj main{max-width:none;padding:18px 2.5vw;height:100%}
 <body>
 <header>
   <div class="brand">Lockout Board</div>
+  <label class="bsel"><span>Board</span><select id="boardSel" aria-label="Current board"></select></label>
   <nav aria-label="Views">
     <a href="#judge" data-v="judge">Judge</a>
     <a href="#projector" data-v="projector">Projector</a>
@@ -234,13 +243,14 @@ const SAMPLE=[
  [3,'Medium','Geometry','A circle is inscribed in a square with side $10$. Using $\\pi \\approx 3.14$, what is the area inside the square but outside the circle?','21.5'],
  [3,'Hard','Number Theory','What is the remainder when $2^{2026}$ is divided by $7$?','2'],
  [3,'Boss','Geometry','Rectangle $ABCD$ has $AB = 8$ and $BC = 6$. It is folded so that $A$ lands on $C$. How long is the crease?','15/2']];
+const PRESETS=[{"name": "Set 1", "desc": "Warm-up, Number Crunch, Shapes & Chances", "boards": [{"name": "Round 1: Warm-up", "duration": 12, "waves": [0, 6], "problems": [[1, "Easy", "Algebra", "What is the value of $2x^2 - 3x$ when $x = -2$?", "14"], [1, "Easy", "Number Theory", "What is the smallest positive integer that is divisible by each of $2$, $3$, $4$, $5$ and $6$?", "60"], [1, "Easy", "Geometry", "A square has the same perimeter as a $6 \\times 10$ rectangle. What is the area of the square?", "64"], [1, "Easy", "Counting", "How many two-digit positive integers have two odd digits?", "25"], [1, "Easy", "Logic", "Maya is $4$th in line counting from the front and $7$th counting from the back. How many people are in the line?", "10"], [1, "Easy", "Geometry", "One angle of a triangle is $40^\\circ$ and the other two angles are equal. How many degrees is each of the equal angles?", "70"], [1, "Easy", "Logic", "The day after tomorrow is Saturday. What day of the week was it three days before yesterday?", "Sunday|sun"], [1, "Medium", "Algebra", "The sum of three consecutive even integers is $78$. What is the largest of the three?", "28"], [1, "Medium", "Number Theory", "What is the remainder when $3^{100}$ is divided by $5$?", "1"], [1, "Medium", "Counting", "A pizza has one of $3$ crusts, one of $2$ sauces and exactly two different toppings chosen from $4$. How many different pizzas are possible?", "36"], [1, "Medium", "Geometry", "A right triangle has legs of length $5$ and $12$. What is its perimeter?", "30"], [1, "Medium", "Algebra", "Student tickets cost 5 dollars and adult tickets cost 8 dollars. $30$ tickets were sold for a total of $186$ dollars. How many adult tickets were sold?", "12"], [2, "Hard", "Number Theory", "How many positive divisors does $360$ have?", "24"], [2, "Hard", "Counting", "In how many ways can the letters $M$, $A$, $T$, $H$ be arranged in a row so that $M$ and $A$ are not next to each other?", "12"], [2, "Hard", "Logic", "A frog is at the bottom of a $10$ m well. Each day it climbs up $3$ m, and each night it slides back $2$ m. On which day does it first reach the top?", "8"], [2, "Boss", "Number Theory", "How many positive integers less than $100$ are divisible by $3$ or by $5$, but not by $15$?", "40"]]}, {"name": "Round 2: Number Crunch", "duration": 15, "waves": [0, 7], "problems": [[1, "Easy", "Primes & Divisibility", "What is the sum of all the prime numbers between $20$ and $40$?", "120"], [1, "Easy", "Digits", "What is the sum of the digits of $10^5 - 1$?", "45"], [1, "Easy", "Equations", "If $5(x - 3) = 2x + 9$, what is $x$?", "8"], [1, "Easy", "Patterns", "What number comes next: $2, 6, 12, 20, 30, \\ldots$?", "42"], [1, "Easy", "Primes & Divisibility", "What is the greatest common divisor of $84$ and $126$?", "42"], [1, "Medium", "Digits", "What is the units digit of $7^{2026}$?", "9"], [1, "Medium", "Equations", "Two numbers add to $30$ and differ by $8$. What is their product?", "209"], [1, "Medium", "Patterns", "What is the $50$th term of the sequence $7, 11, 15, 19, \\ldots$?", "203"], [1, "Medium", "Digits", "How many three-digit numbers have three different digits that are all odd?", "60"], [1, "Medium", "Equations", "Ana is $4$ times as old as Ben. In $10$ years, she will be twice as old as him. How old is Ana now?", "20"], [1, "Medium", "Patterns", "What is $1 + 3 + 5 + \\cdots + 99$?", "2500"], [1, "Hard", "Primes & Divisibility", "How many zeros are at the end of the product $1 \\times 2 \\times 3 \\times \\cdots \\times 25$?", "6"], [2, "Hard", "Digits", "A two-digit number is $4$ times the sum of its digits. Reversing its digits makes it $27$ larger. What is the number?", "36"], [2, "Hard", "Equations", "If $x + \\dfrac{1}{x} = 5$, what is $x^2 + \\dfrac{1}{x^2}$?", "23"], [2, "Boss", "Primes & Divisibility", "What is the smallest positive integer that leaves a remainder of $1$ when divided by $2$, $3$, $4$, $5$ or $6$, and is divisible by $7$?", "301"], [2, "Boss", "Patterns", "What is the value of $$\\frac{1}{1\\cdot 2}+\\frac{1}{2\\cdot 3}+\\cdots+\\frac{1}{9\\cdot 10}$$", "9/10"]]}, {"name": "Round 3: Shapes & Chances", "duration": 15, "waves": [0, 7], "problems": [[1, "Easy", "Angles", "What is the sum of the interior angles of a pentagon, in degrees?", "540"], [1, "Easy", "Area & Length", "A rectangle has area $48$ and length $8$. What is its perimeter?", "28"], [1, "Easy", "Counting", "How many diagonals does a hexagon have?", "9"], [1, "Easy", "Probability", "Two coins are flipped. What is the probability that both land heads?", "1/4"], [1, "Easy", "Angles", "Two angles add to $180^\\circ$. One is $36^\\circ$ larger than the other. How many degrees is the larger angle?", "108"], [1, "Easy", "Counting", "In how many different orders can $4$ students stand in a line?", "24"], [1, "Medium", "Angles", "Each interior angle of a regular polygon is $150^\\circ$. How many sides does it have?", "12"], [1, "Medium", "Area & Length", "A square has a diagonal of length $10$. What is its area?", "50"], [1, "Medium", "Counting", "How many different committees of $3$ people can be chosen from $7$ people?", "35"], [1, "Medium", "Probability", "Two standard six-sided dice are rolled. What is the probability that the numbers add to $7$?", "1/6"], [1, "Hard", "Angles", "What is the smaller angle, in degrees, between the hour hand and the minute hand of a clock at 3:30?", "75"], [1, "Hard", "Counting", "How many rectangles of any size (squares included) can be found in a $3 \\times 3$ grid of squares?", "36"], [2, "Hard", "Area & Length", "A right triangle has a hypotenuse of $10$ and one leg of $6$. How long is the altitude drawn to the hypotenuse?", "24/5"], [2, "Hard", "Probability", "A bag holds $4$ red and $6$ blue marbles. Two are drawn without replacement. What is the probability that both are red?", "2/15"], [2, "Boss", "Area & Length", "What is the area of the triangle with vertices $(0, 0)$, $(8, 2)$ and $(2, 6)$?", "22"], [2, "Boss", "Probability", "Three standard six-sided dice are rolled. What is the probability that all three show different numbers?", "5/9"]]}]}];
 const KEY='lockout-board-v1';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const DEF={duration:38,waves:[0,12,24],penalty:0,chain:[100,100,50,25],cap:3,bountyAmt:5,bountyEvery:5,cbTeams:3,cbMult:1.5,sweep:20};
 function sampleProblems(){return SAMPLE.map(([wave,tier,topic,text,answer],i)=>({id:i+1,wave,tier,pts:TIERS[tier],topic,text,answer}));}
 function fresh(sample){
-  const s={v:3,teams:NAMES.map((n,i)=>({id:i,name:n,color:COLORS[i]})),problems:sampleProblems(),
+  const s={v:4,boards:[{id:1,name:'Board 1'}],cur:1,teams:NAMES.map((n,i)=>({id:i,name:n,color:COLORS[i]})),problems:sampleProblems(),
     settings:JSON.parse(JSON.stringify(DEF)),timer:{running:false,startedAt:0,elapsed:0},openedAt:{},events:[],seq:0,sample:false,sampleProblems:true,texSamples:true};
   if(!sample){s.problems.forEach(p=>{p.text='';p.answer='';});s.sampleProblems=false;}
   if(sample){
@@ -266,7 +276,8 @@ function migrate(s){
     s.openedAt={};(s.opened||[]).forEach(w=>{const at=(s.settings.waves[w-1]||0)*60000;s.openedAt[w]=Math.min(el,at);});delete s.opened;
     s.settings.penalty=0;s.v=3;
   }
-  if(s.v!==3||!s.settings||!Array.isArray(s.settings.waves))return null;
+  if(s.v===3){s.boards=[{id:1,name:'Board 1'}];s.cur=1;s.v=4;}
+  if(s.v!==4||!s.settings||!Array.isArray(s.settings.waves)||!Array.isArray(s.boards))return null;
   for(const k in DEF)if(s.settings[k]==null)s.settings[k]=JSON.parse(JSON.stringify(DEF[k]));
   if(!s.openedAt)s.openedAt={};
   return s;
@@ -358,6 +369,43 @@ function preview(d,ti,p){
   return {pts,mult,k:R.solves.length,pct:R.nextPct,sweep:wouldSweep(d,ti,p)};
 }
 
+/* Boards: the current board's data lives at the top level of state; other boards are stored in state.boards. */
+const BOARD_KEYS=['problems','events','seq','timer','openedAt','sample','sampleProblems'];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const curBoard=()=>state.boards.find(b=>b.id===state.cur);
+function snapshot(){const b={};BOARD_KEYS.forEach(k=>b[k]=state[k]);b.waves=S().waves;b.duration=S().duration;return b;}
+function stash(){const b=curBoard();if(!b)return;const t=state.timer;if(t.running){t.elapsed=elapsed();t.running=false;}Object.assign(b,clone(snapshot()));}
+function activate(id){
+  const b=state.boards.find(x=>x.id===id);if(!b||id===state.cur)return;
+  stash();state.cur=id;const c=clone(b);
+  BOARD_KEYS.forEach(k=>state[k]=c[k]);S().waves=c.waves;S().duration=c.duration;
+  ui.prob=null;ui.team=null;ui.zoom=null;ui.sig='';ui.lastSeen=state.events.length?state.events[state.events.length-1].id:0;
+}
+function withBoard(b,fn){
+  const keep=snapshot();BOARD_KEYS.forEach(k=>state[k]=b[k]);S().waves=b.waves;S().duration=b.duration;
+  try{return fn();}finally{BOARD_KEYS.forEach(k=>state[k]=keep[k]);S().waves=keep.waves;S().duration=keep.duration;}
+}
+function totals(){
+  const tot={};state.teams.forEach(t=>tot[t.id]=0);
+  const others=state.boards.filter(b=>b.id!==state.cur&&b.events&&b.events.length);
+  for(const b of others)withBoard(b,()=>derive().T.forEach(t=>tot[t.id]+=t.pts));
+  derive().T.forEach(t=>tot[t.id]+=t.pts);
+  return {tot,multi:others.length>0};
+}
+function newSlot(id,name,problems,waves,duration){return {id,name,problems,events:[],seq:0,timer:{running:false,startedAt:0,elapsed:0},openedAt:{},sample:false,sampleProblems:false,waves:waves.slice(),duration};}
+const nextBoardId=()=>state.boards.reduce((m,b)=>Math.max(m,b.id),0)+1;
+function addPreset(i){
+  const P=PRESETS[i];if(!P)return;
+  stash();
+  if(state.boards.length===1&&isBlank())state.boards=[];
+  let id=nextBoardId();
+  const added=P.boards.map(pb=>newSlot(id++,P.name+' · '+pb.name,pb.problems.map(([w,t,tp,tx,a],k)=>({id:k+1,wave:w,tier:t,pts:TIERS[t],topic:tp,text:tx,answer:a})),pb.waves,pb.duration));
+  state.boards.push(...added);state.cur=-1;activate(added[0].id);
+  ui.msg={t:'ok',s:P.name+' added: '+added.length+' boards. Now on '+added[0].name+'.'};
+}
+function newBoard(){stash();const id=nextBoardId(),f=fresh(false);state.boards.push(newSlot(id,'Board '+id,f.problems,[0,12,24],38));activate(id);}
+function dupBoard(id){stash();const src=id===state.cur?snapshot():state.boards.find(b=>b.id===id);if(!src)return;const nid=nextBoardId(),b=newSlot(nid,(state.boards.find(x=>x.id===id).name)+' (copy)',clone(src.problems),src.waves,src.duration);state.boards.push(b);}
+function delBoard(id){if(state.boards.length<2)return;if(id===state.cur){const other=state.boards.find(b=>b.id!==id);activate(other.id);}state.boards=state.boards.filter(b=>b.id!==id);}
 function isBlank(){return !state.events.length&&!state.problems.some(p=>(p.text||'').trim()||(p.answer||'').trim());}
 function loadSample(game){
   const s=fresh(true);
@@ -409,8 +457,8 @@ function boardHTML(d,mini){
   return '<div class="board'+(mini?' mini':'')+'" style="--cols:'+cols(n)+'">'+state.problems.map((p,i)=>cellHTML(p,i,d,el,mini)).join('')+'</div>';
 }
 function lbHTML(d){
-  const max=Math.max(1,...d.rank.map(t=>t.pts));
-  return '<div class="lb">'+d.rank.map((t,i)=>'<div class="lbr"><span class="rk">'+(i+1)+'</span><div class="lbn"><span class="nm"><i class="sw" style="background:'+esc(t.color)+'"></i>'+esc(t.name)+(d.cbSet.has(t.id)?'<span class="tag">'+fmtMult(S().cbMult)+'</span>':'')+(t.sweeps.length?'<span class="tag soft">'+t.sweeps.length+(t.sweeps.length>1?' sweeps':' sweep')+'</span>':'')+'</span><div class="track"><i style="width:'+Math.max(0,t.pts/max*100)+'%;background:'+esc(t.color)+'"></i></div></div><span class="sc">'+t.pts+'</span></div>').join('')+'</div>';
+  const max=Math.max(1,...d.rank.map(t=>t.pts)),X=totals();
+  return '<div class="lb">'+d.rank.map((t,i)=>'<div class="lbr"><span class="rk">'+(i+1)+'</span><div class="lbn"><span class="nm"><i class="sw" style="background:'+esc(t.color)+'"></i>'+esc(t.name)+(d.cbSet.has(t.id)?'<span class="tag">'+fmtMult(S().cbMult)+'</span>':'')+(t.sweeps.length?'<span class="tag soft">'+t.sweeps.length+(t.sweeps.length>1?' sweeps':' sweep')+'</span>':'')+(X.multi?'<span class="tot">Total '+X.tot[t.id]+'</span>':'')+'</span><div class="track"><i style="width:'+Math.max(0,t.pts/max*100)+'%;background:'+esc(t.color)+'"></i></div></div><span class="sc">'+t.pts+'</span></div>').join('')+'</div>';
 }
 function evText(e,d){
   const nm=team(e.team)?team(e.team).name:'?',L=label(e.prob),inf=d&&d.evInfo[e.id];
@@ -477,7 +525,7 @@ function pcard(p,i,d){
   const R=d.P[p.id],o=R.solves.length?team(R.solves[0].team):null;
   const st=o?' style="background:'+esc(o.color)+';color:'+inkOn(o.color)+';border-color:'+esc(o.color)+'"':'';
   const bt=!o&&R.bounty?'<span class="btag">+'+R.bounty+'</span>':'';
-  return '<button class="pcard'+(R.closed?' closed':'')+'" data-act="zoom" data-id="'+p.id+'" data-cell="'+p.id+'"'+st+'><div class="qc-top"><b>#'+(i+1)+'</b><span>'+esc(p.topic)+'</span>'+bt+'<span class="qpts">'+R.live+'</span></div><div class="qc-text tex">'+(p.text?esc(p.text):'<span class="sub">No problem text saved.</span>')+'</div><div class="qc-st">'+statusText(p,d)+'</div></button>';
+  return '<button class="pcard'+(R.closed?' closed':'')+'" data-act="zoom" data-id="'+p.id+'" data-cell="'+p.id+'"'+st+'><div class="qc-top"><b>#'+(i+1)+'</b><span>'+esc(p.topic)+'</span>'+bt+'<span class="qpts">'+R.live+'</span></div><div class="qc-text tex">'+(p.text?esc(p.text):'<span class="sub">No problem text saved.</span>')+'</div>'+(o?'<div class="qc-st">'+statusText(p,d)+'</div>':'')+'</button>';
 }
 function projView(){
   const d=derive(),el=elapsed();
@@ -488,13 +536,15 @@ function projView(){
   for(let w=2;w<=nW();w++)if(!isOpen(w,el)){const k=state.problems.filter(p=>p.wave===w).length;if(k)locks+='<span>Wave '+w+': '+k+(k===1?' more problem':' more problems')+(state.timer.running||state.timer.elapsed?' open in <span class="cd" data-w="'+w+'">'+clk(waveAt(w)-el)+'</span>':' open '+S().waves[w-1]+' min in')+'</span>';}
   if(locks)locks='<div class="qlock">'+locks+'</div>';
   const rules='<div class="rules">'+rulesLine().map(r=>'<span>'+esc(r)+'</span>').join('')+'</div>';
-  return '<div class="pj">'+pjTop('Lockout Board')+'<div class="pjmain">'+grid+locks+'</div><div class="pjside">'+lbHTML(d)+rules+'</div></div>'+pjBar()+(ui.zoom!=null?zoomHTML(d):'');
+  return '<div class="pj">'+pjTop(esc(curBoard()?curBoard().name:'Lockout Board'))+'<div class="pjmain">'+grid+locks+'</div><div class="pjside">'+lbHTML(d)+rules+'</div></div>'+pjBar()+(ui.zoom!=null?zoomHTML(d):'');
 }
 function logView(){
   const d=derive();
   const rows=[...state.events].reverse().map(e=>'<tr><td class="n">'+stamp(e.t)+'</td><td><span class="sw" style="display:inline-block;vertical-align:-2px;margin-right:6px;background:'+esc(team(e.team).color)+'"></span>'+esc(evText(e,d))+'</td><td class="n">'+signed(d.evPts[e.id]||0)+'</td><td><button data-act="del" data-id="'+e.id+'" style="min-height:36px;padding:4px 10px">Remove</button></td></tr>').join('');
+  const X=totals();
+  const overall=X.multi?'<h3>Overall, all boards</h3><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Total</th></tr></thead><tbody>'+[...state.teams].sort((a,b)=>X.tot[b.id]-X.tot[a.id]||a.id-b.id).map((t,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td class="n">'+X.tot[t.id]+'</td></tr>').join('')+'</tbody></table></div>':'';
   const stand=d.rank.map((t,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td class="n">'+t.pts+'</td><td class="n">'+(t.at?stamp(t.atT):'–')+'</td><td class="n">'+t.claims+'</td><td class="n">'+t.solves+'</td><td>'+esc(t.sweeps.join(', '))+'</td><td class="n">'+t.wrong+'</td></tr>').join('');
-  return '<div class="cols"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Every slip, newest first</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><p class="sub">Points are recalculated from this list, so removing a slip fixes everything after it.</p><div class="scroll"><table><thead><tr><th>Time</th><th>What</th><th>Pts</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Standings</h2><button data-act="copyres">Copy results</button></div><p class="sub">Tied teams are ranked by who reached that score first.</p><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>Reached at</th><th>Claims</th><th>Solves</th><th>Sweeps</th><th>Wrong</th></tr></thead><tbody>'+stand+'</tbody></table></div>'+(ui.copyText?'<textarea readonly>'+esc(ui.copyText)+'</textarea>':'')+'</div></div>';
+  return '<div class="cols"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Every slip, newest first</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><p class="sub">Points are recalculated from this list, so removing a slip fixes everything after it.</p><div class="scroll"><table><thead><tr><th>Time</th><th>What</th><th>Pts</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Standings: '+esc(curBoard()?curBoard().name:'')+'</h2><button data-act="copyres">Copy results</button></div><p class="sub">Tied teams are ranked by who reached that score first.</p><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>Reached at</th><th>Claims</th><th>Solves</th><th>Sweeps</th><th>Wrong</th></tr></thead><tbody>'+stand+'</tbody></table></div>'+overall+(ui.copyText?'<textarea readonly>'+esc(ui.copyText)+'</textarea>':'')+'</div></div>';
 }
 function setupView(){
   const s=S(),d=derive(),n=state.problems.length;
@@ -517,9 +567,13 @@ function setupView(){
     fld('Wrong answer penalty','penalty',s.penalty,'Off for now. Set to 5 to bring it back.')+
     fld('Event length (min)','duration',s.duration,'')+
   '</div></div>';
-  return '<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems and answer key</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Problems with the same topic form a sweep group. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Wave</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="6" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
+  const bl=state.boards.map(b=>{const cur=b.id===state.cur,pc=cur?state.problems.length:(b.problems||[]).length,ec=cur?state.events.length:(b.events||[]).length;
+    return '<tr><td><input value="'+esc(b.name)+'" data-f="board.name.'+b.id+'" aria-label="Board name"></td><td class="n">'+plural(pc)+'</td><td class="n">'+ec+(ec===1?' slip':' slips')+'</td><td>'+(cur?'<span class="cur">Current</span>':'<button data-act="bswitch" data-id="'+b.id+'">Switch to</button>')+'</td><td><button data-act="bdup" data-id="'+b.id+'">Duplicate</button></td><td>'+(state.boards.length>1?'<button data-act="bdel" data-id="'+b.id+'">'+(ui.armed==='bdel'+b.id?'Click again':'Delete')+'</button>':'')+'</td></tr>';}).join('');
+  const presets=PRESETS.map((P,i)=>'<button data-act="preset" data-i="'+i+'">Add '+esc(P.name)+' ('+P.boards.length+' rounds: '+esc(P.desc)+')</button>').join('');
+  const boardsCard='<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Boards</h2><button data-act="bnew">New blank board</button></div><p class="sub">Each board is one round with its own problems, timer and scores. Switching boards pauses the current one. Totals across boards show on the leaderboard and in the Log.</p><div class="scroll"><table class="bt"><tbody>'+bl+'</tbody></table></div><h3>Ready-made problem sets</h3><div class="row">'+presets+'</div><p class="sub">Problems written for Grade 9, with every answer checked. Adding a set creates one board per round.</p></div>';
+  return boardsCard+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems: '+esc(curBoard()?curBoard().name:'')+'</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Problems with the same topic form a sweep group. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Wave</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="6" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
   '<div class="cols" style="margin-top:20px"><div>'+scoring+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Waves</h2><button data-act="addw">Add wave</button></div><p class="sub">Times count from the start of the event. Removing a wave moves its problems to the wave before.</p><div class="scroll"><table><tbody>'+waves+'</tbody></table></div></div></div>'+
-  '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game keeps your teams, problems, answer key and rules, and clears scores, timer and waves.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
+  '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game clears this board’s scores, timer and waves, and keeps its problems. Reset everything wipes all boards.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
   '<div class="card"><h2>Sample data</h2><p class="sub" style="margin-top:0">For trying the app out. Both replace your problems; your teams and scoring rules stay.</p><div class="row"><button data-act="samplegame">'+arm('samplegame','Load sample game','Click again: replaces problems and scores')+'</button><button data-act="sampleprobs">'+arm('sampleprobs','Load sample problems only','Click again: replaces all problems')+'</button></div><p class="sub">The sample game is 16 problems with 9 minutes of play already recorded. Problems only keeps your current scores.</p></div>'+
   '<div class="card"><h2>Teams</h2><p class="sub" style="margin-top:0">Named after the playing cards kids draw at the door.</p><table><tbody>'+teams+'</tbody></table></div></div></div>';
 }
@@ -527,6 +581,7 @@ function setupView(){
 function render(){
   const v=view;
   document.body.classList.toggle('proj',PROJ.includes(v));
+  const bs=document.getElementById('boardSel');bs.innerHTML=state.boards.map(b=>'<option value="'+b.id+'"'+(b.id===state.cur?' selected':'')+'>'+esc(b.name)+'</option>').join('');
   document.querySelectorAll('nav a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
   document.getElementById('sample').innerHTML=PROJ.includes(v)?'':state.sample?'<div class="sample"><span>A sample game is loaded so you can see the board working. Clear it before the real thing.</span><button data-act="newgame2">Clear sample scores and start fresh</button></div>':isBlank()?'<div class="sample"><span>No problems or answers yet. Add yours in Setup, or try the app with sample data.</span><button data-act="samplegame2">Load sample game</button></div>':'';
   const m=document.getElementById('main');
@@ -544,9 +599,11 @@ function fit(){
   const g=document.querySelector('.pboard');if(!g)return;
   if(window.innerWidth<=980){g.style.removeProperty('--qf');return;}
   let f=Math.round(Math.min(32,Math.max(14,window.innerHeight/30)));
-  const over=()=>[...g.querySelectorAll('.qc-text')].some(t=>t.scrollHeight>t.clientHeight+1);
+  const texts=[...g.querySelectorAll('.qc-text')];texts.forEach(t=>t.style.removeProperty('font-size'));
+  const over=()=>texts.some(t=>t.scrollHeight>t.clientHeight+1);
   g.style.setProperty('--qf',f+'px');
   while(f>10&&over()){f--;g.style.setProperty('--qf',f+'px');}
+  texts.forEach(t=>{let z=f;while(z>9&&t.scrollWidth>t.clientWidth+1){z--;t.style.fontSize=z+'px';}});
 }
 function waveHint(el){
   if(el>=dur())return "Time's up";
@@ -597,7 +654,7 @@ function announce(){
 function setView(){let h=location.hash.slice(1);if(h==='questions')h='projector';view=['judge','projector','log','setup'].includes(h)?h:'judge';ui.copyText='';ui.restore=false;if(!PROJ.includes(view))ui.zoom=null;render();}
 function arm(k,fn){if(ui.armed===k){ui.armed=null;fn();}else{ui.armed=k;render();setTimeout(()=>{if(ui.armed===k){ui.armed=null;render();}},4000);}}
 async function copy(text){ui.copyText=text;try{await navigator.clipboard.writeText(text);ui.copyText='';ui.msg={t:'ok',s:'Copied.'};}catch(e){}render();}
-function results(){const d=derive();return 'Lockout Board results\n'+d.rank.map((t,i)=>(i+1)+'. '+t.name+' — '+t.pts+' pts ('+t.claims+' claims, '+t.solves+' solves'+(t.sweeps.length?', swept '+t.sweeps.join(' and '):'')+')').join('\n');}
+function results(){const d=derive(),X=totals();return (X.multi?'Overall\n'+[...state.teams].sort((a,b)=>X.tot[b.id]-X.tot[a.id]||a.id-b.id).map((t,i)=>(i+1)+'. '+t.name+' — '+X.tot[t.id]+' pts').join('\n')+'\n\n':'')+(curBoard()?curBoard().name:'Lockout Board')+'\n'+d.rank.map((t,i)=>(i+1)+'. '+t.name+' — '+t.pts+' pts ('+t.claims+' claims, '+t.solves+' solves'+(t.sweeps.length?', swept '+t.sweeps.join(' and '):'')+')').join('\n');}
 function newGame(){state.events=[];state.seq=0;state.timer={running:false,startedAt:0,elapsed:0};state.openedAt={};state.sample=false;ui.msg=null;ui.lastSeen=0;commit();}
 const plural=n=>n+(n===1?' problem':' problems');
 function nextId(){return state.problems.reduce((m,p)=>Math.max(m,p.id),0)+1;}
@@ -632,6 +689,11 @@ document.addEventListener('click',e=>{
   else if(a==='up'||a==='down'){const i=+b.dataset.i,j=a==='up'?i-1:i+1,P=state.problems;if(j>=0&&j<P.length){[P[i],P[j]]=[P[j],P[i]];keepScroll(()=>commit());}}
   else if(a==='addw'){const W=state.settings.waves,last=W[W.length-1]||0;W.push(Math.min(state.settings.duration,last+10));keepScroll(()=>commit());}
   else if(a==='delw'){const w=+b.dataset.w;state.settings.waves.splice(w-1,1);state.problems.forEach(p=>{if(p.wave>=w)p.wave=Math.max(1,p.wave-1);});const oa={};for(const k in state.openedAt){const x=+k;if(x<w)oa[x]=state.openedAt[k];else if(x>w)oa[x-1]=state.openedAt[k];}state.openedAt=oa;keepScroll(()=>commit());}
+  else if(a==='bswitch'){activate(+b.dataset.id);commit();}
+  else if(a==='bnew'){newBoard();keepScroll(()=>commit());}
+  else if(a==='bdup'){dupBoard(+b.dataset.id);keepScroll(()=>commit());}
+  else if(a==='bdel'){const id=+b.dataset.id;keepScroll(()=>arm('bdel'+id,()=>{delBoard(id);commit();}));}
+  else if(a==='preset'){addPreset(+b.dataset.i);commit();}
   else if(a==='sampleprobs')keepScroll(()=>arm('sampleprobs',()=>loadSample(false)));
   else if(a==='samplegame')keepScroll(()=>arm('samplegame',()=>loadSample(true)));
   else if(a==='samplegame2')loadSample(true);
@@ -643,8 +705,10 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.cell[data-act]')){e.preventDefault();e.target.click();}
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='boardSel'){activate(+e.target.value);commit();return;}
   const f=e.target.dataset.f;if(!f)return;
   const [k,field,idx]=f.split('.'),v=e.target.value;
+  if(k==='board'){const b=state.boards.find(x=>x.id===+idx);if(b)b.name=v.trim()||b.name;commit(false);const y=window.scrollY;render();window.scrollTo(0,y);return;}
   if(k==='team'){const t=team(+idx);if(field==='name')t.name=v.trim()||t.name;else t.color=v;}
   else if(k==='prob'){const p=prob(+idx);if(!p)return;if(field==='wave')p.wave=+v;else if(field==='tier'){p.tier=v;p.pts=TIERS[v];const r=e.target.closest('tr').querySelector('[data-f^="prob.pts"]');if(r)r.value=p.pts;}else if(field==='pts')p.pts=Math.max(0,parseInt(v,10)||0);else p[field]=v;if(field==='text'||field==='answer')state.sampleProblems=false;}
   else if(k==='wave'){state.settings.waves[+idx]=Math.max(0,parseFloat(v)||0);}
@@ -660,6 +724,7 @@ if(bc)bc.onmessage=ev=>onRemote(ev.data);
 window.addEventListener('storage',ev=>{if(ev.key===KEY&&ev.newValue){try{onRemote(JSON.parse(ev.newValue));}catch(err){}}});
 window.addEventListener('hashchange',setView);
 let rsT=null;window.addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(fit,120);});
+let idleT=null;const wake=()=>{document.body.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>document.body.classList.add('idle'),3000);};['mousemove','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,wake,{passive:true}));wake();
 
 function start(hot){
   state=load(hot);

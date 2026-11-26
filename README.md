@@ -2,7 +2,7 @@
 
 A judging app and projector scoreboard for a team math competition. Teams race to solve problems on a shared board, and the first team to solve a problem claims that square.
 
-**Live:** https://tacocatta.github.io/lockout-board/
+**Live:** https://tacocatta.github.io/square-off/
 
 ## How the game works
 

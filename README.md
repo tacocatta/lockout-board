@@ -19,6 +19,7 @@ Each problem is worth points based on difficulty: **Easy 10, Medium 20, Hard 30,
 Optional extra rules, under **Setup → Scoring rules** (all off by default):
 
 - **Solve order:** change how many teams can score on a problem and what share they get, e.g. 100%, 100%, 50%, 25%.
+- **Claim cap:** the most problems one team can claim in a round. Capped teams can still solve problems other teams have claimed.
 - **Bounties:** unclaimed problems gain points every few minutes.
 - **Comeback:** in the last few minutes, the bottom teams score extra.
 - **Wrong-answer penalty:** lose points for each wrong slip.
@@ -27,7 +28,7 @@ Optional extra rules, under **Setup → Scoring rules** (all off by default):
 
 1. Open the app on the judges' laptop (**Judge** view).
 2. Open it in a second tab, switch to **Projector**, move it to the projector screen and press **Full screen**.
-3. In **Setup → Boards**, press **Add Set 1** for three ready-made 15-minute rounds, or write your own problems in **Setup**.
+3. In **Setup → Boards**, press **Add Set 1** for a 5-minute warm-up and three 15-minute rounds, or write your own problems in **Setup**.
 4. Pick the round from the **Board** menu and press **Start**.
 5. For each slip, pick the team and the problem, compare the slip with the answer shown, and press **Correct** or **Wrong**.
 

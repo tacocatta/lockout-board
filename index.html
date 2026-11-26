@@ -247,9 +247,9 @@ const PRESETS=[{"name": "Set 1", "desc": "Warm-up, Number Crunch, Shapes & Chanc
 const KEY='lockout-board-v1';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const RULES_OFF={penalty:0,chain:[100,50],cap:0,bountyAmt:0,bountyEvery:5,cbTeams:0,cbMult:1.5,sweep:0};
-const RULES_ON={penalty:0,chain:[100,100,50,25],cap:3,bountyAmt:5,bountyEvery:5,cbTeams:3,cbMult:1.5,sweep:20};
-const DEF={duration:38,waves:[0,12,24],...RULES_OFF};
+const RULES_OFF={penalty:0,chain:[100,50],cap:0,bountyAmt:0,bountyEvery:5,cbTeams:0,cbMult:1.5,cbLast:5};
+const RULES_ON={penalty:0,chain:[100,100,50,25],cap:4,bountyAmt:5,bountyEvery:5,cbTeams:3,cbMult:1.5,cbLast:5};
+const DEF={duration:15,waves:[0],...RULES_OFF};
 function sampleProblems(){return SAMPLE.map(([wave,tier,topic,text,answer],i)=>({id:i+1,wave,tier,pts:TIERS[tier],topic,text,answer}));}
 function fresh(sample){
   const s={v:4,boards:[{id:1,name:'Board 1'}],cur:1,teams:NAMES.map((n,i)=>({id:i,name:n,color:COLORS[i]})),problems:sampleProblems(),
@@ -298,18 +298,13 @@ const label=id=>{const i=state.problems.findIndex(p=>p.id===id);return i<0?'#?':
 const team=i=>state.teams[i];
 const S=()=>state.settings;
 const dur=()=>S().duration*60000;
-const nW=()=>S().waves.length;
-const waveAt=w=>w<=1?0:(S().waves[w-1]==null?Infinity:S().waves[w-1]*60000);
 function elapsed(){const t=state.timer;return Math.min(dur(),t.elapsed+(t.running?Date.now()-t.startedAt:0));}
-const isOpen=(w,el=elapsed())=>w<=1||state.openedAt[w]!=null||el>=waveAt(w);
-const openAt=w=>w<=1?0:Math.min(waveAt(w),state.openedAt[w]!=null?state.openedAt[w]:Infinity);
+const isOpen=()=>true;
 const chainOf=()=>S().chain&&S().chain.length?S().chain:[100];
 const bountyOn=()=>S().bountyAmt>0&&S().bountyEvery>0;
-function bountyAt(p,t){if(!bountyOn())return 0;const o=openAt(p.wave);if(!isFinite(o)||t<o)return 0;return Math.floor((t-o)/(S().bountyEvery*60000))*S().bountyAmt;}
-const cbOn=()=>S().cbTeams>0&&S().cbMult!==1&&nW()>1;
-const cbStart=()=>cbOn()?openAt(nW()):Infinity;
-const tkey=s=>String(s||'').trim().toLowerCase();
-function topicGroups(){const g={};state.problems.forEach(p=>{const k=tkey(p.topic);if(k)(g[k]=g[k]||[]).push(p.id);});for(const k in g)if(g[k].length<2)delete g[k];return g;}
+function bountyAt(p,t){if(!bountyOn()||t<0)return 0;return Math.floor(t/(S().bountyEvery*60000))*S().bountyAmt;}
+const cbOn=()=>S().cbTeams>0&&S().cbMult!==1;
+const cbStart=()=>cbOn()?Math.max(0,dur()-Math.max(0,S().cbLast)*60000):Infinity;
 const ord=n=>n+(n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
 const fmtMult=m=>'×'+(+m.toFixed(2));
 function clk(ms){if(!isFinite(ms))return '–';const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
@@ -333,10 +328,10 @@ function matches(a,key){
 /* Scores are never stored: every view replays the event list through the current rules. */
 const rankCmp=(a,b)=>b.pts-a.pts||a.at-b.at||a.id-b.id;
 function derive(now=elapsed()){
-  const st=S(),chain=chainOf(),groups=topicGroups(),cb0=cbStart();
+  const st=S(),chain=chainOf(),cb0=cbStart();
   const P={};state.problems.forEach(p=>P[p.id]={solves:[],val:null});
-  const T=state.teams.map(t=>({...t,pts:0,wrong:0,solves:0,claims:0,sweeps:[],at:0,atT:0}));
-  const evPts={},evInfo={},swept={};
+  const T=state.teams.map(t=>({...t,pts:0,wrong:0,solves:0,claims:0,at:0,atT:0}));
+  const evPts={},evInfo={};
   for(const e of state.events){
     const tm=T[e.team];if(!tm)continue;
     let pts=0;
@@ -350,8 +345,6 @@ function derive(now=elapsed()){
       pts=Math.round(R.val*chain[k]/100*mult);
       const info={k,pct:chain[k],mult,base:pts};
       R.solves.push({team:e.team,pts,id:e.id,t:e.t,k});tm.solves++;if(!k)tm.claims++;
-      if(!k&&st.sweep>0){const key=tkey(p.topic),ids=groups[key];
-        if(ids&&!swept[key]&&ids.every(id=>P[id].solves[0]&&P[id].solves[0].team===e.team)){swept[key]=e.team;pts+=st.sweep;tm.sweeps.push(p.topic.trim());info.sweep=p.topic.trim();}}
       evInfo[e.id]=info;
     }else if(e.type==='wrong'){pts=-(st.penalty||0);tm.wrong++;}
     else pts=e.pts||0;
@@ -360,15 +353,14 @@ function derive(now=elapsed()){
   for(const p of state.problems){const R=P[p.id];R.closed=R.solves.length>=chain.length;R.live=R.solves.length?R.val:p.pts+bountyAt(p,now);R.bounty=R.live-p.pts;R.nextPct=R.closed?null:chain[R.solves.length];R.nextPts=R.closed?0:Math.round(R.live*R.nextPct/100);}
   const rank=[...T].sort(rankCmp);
   const cbActive=cbOn()&&now>=cb0,cbSet=new Set(cbActive?rank.slice(-st.cbTeams).map(t=>t.id):[]);
-  return {P,T,rank,evPts,evInfo,cbActive,cbSet,chain,groups,swept};
+  return {P,T,rank,evPts,evInfo,cbActive,cbSet,chain};
 }
-function claimsInWave(d,ti,w){return state.problems.filter(q=>q.wave===w&&d.P[q.id].solves[0]&&d.P[q.id].solves[0].team===ti).length;}
-function capped(d,ti,p){return S().cap>0&&!d.P[p.id].solves.length&&claimsInWave(d,ti,p.wave)>=S().cap;}
-function wouldSweep(d,ti,p){if(!(S().sweep>0)||d.P[p.id].solves.length)return false;const key=tkey(p.topic),ids=d.groups[key];if(!ids||d.swept[key]!=null)return false;return ids.every(id=>id===p.id||(d.P[id].solves[0]&&d.P[id].solves[0].team===ti));}
+function claimsOf(d,ti){return state.problems.filter(q=>d.P[q.id].solves[0]&&d.P[q.id].solves[0].team===ti).length;}
+function capped(d,ti,p){return S().cap>0&&!d.P[p.id].solves.length&&claimsOf(d,ti)>=S().cap;}
 function preview(d,ti,p){
   const R=d.P[p.id];if(R.closed)return null;
   const mult=d.cbSet.has(ti)?S().cbMult:1,pts=Math.round(R.live*R.nextPct/100*mult);
-  return {pts,mult,k:R.solves.length,pct:R.nextPct,sweep:wouldSweep(d,ti,p)};
+  return {pts,mult,k:R.solves.length,pct:R.nextPct};
 }
 
 /* Boards: the current board's data lives at the top level of state; other boards are stored in state.boards. */
@@ -412,7 +404,6 @@ function isBlank(){return !state.events.length&&!state.problems.some(p=>(p.text|
 function loadSample(game){
   const s=fresh(true);
   state.problems=s.problems;state.sampleProblems=true;
-  while(nW()<3)S().waves.push((S().waves[S().waves.length-1]||0)+12);
   if(game){state.events=s.events;state.seq=s.seq;state.timer=s.timer;state.openedAt={};state.sample=true;ui.lastSeen=s.seq;}
   ui.prob=null;ui.team=null;ui.msg={t:'ok',s:game?'Sample game loaded: 16 problems and 9 minutes of play.':'Sample problems loaded.'};
   commit();
@@ -430,11 +421,11 @@ function submit(kind){
   let ok;
   if(kind==='check'){ok=matches(ui.answer,p.answer);if(ok===null){ui.msg={t:'warn',s:'No answer key for '+L+' yet. Use Correct or Wrong, or add it in Setup.'};return render();}}
   else ok=kind==='right';
-  if(ok&&capped(d,ti,p)){ui.msg={t:'warn',s:nm+' has used all '+S().cap+' claims in wave '+p.wave+'. They can solve '+L+' once another team has claimed it.'};return render();}
+  if(ok&&capped(d,ti,p)){ui.msg={t:'warn',s:nm+' has used all '+S().cap+' claims this round. They can solve '+L+' once another team has claimed it.'};return render();}
   const t=elapsed();
   if(ok){
     const e=addEvent({type:'solve',team:ti,prob:id,t}),d2=derive(),inf=d2.evInfo[e.id];
-    ui.msg={t:'ok',s:'Correct. '+nm+(inf.k?' solves '+L+' ('+ord(inf.k+1)+', '+inf.pct+'%)':' claims '+L)+' for +'+inf.base+(inf.mult!==1?' (comeback '+fmtMult(inf.mult)+')':'')+'.'+(inf.sweep?' Topic sweep in '+inf.sweep+': +'+S().sweep+'!':'')+(d2.P[id].closed?' '+L+' is now closed.':'')};
+    ui.msg={t:'ok',s:'Correct. '+nm+(inf.k?' solves '+L+' ('+ord(inf.k+1)+', '+inf.pct+'%)':' claims '+L)+' for +'+inf.base+(inf.mult!==1?' (comeback '+fmtMult(inf.mult)+')':'')+'.'+(d2.P[id].closed?' '+L+' is now closed.':'')};
   }else{
     addEvent({type:'wrong',team:ti,prob:id,t});
     ui.msg={t:'bad',s:'Not correct.'+(S().penalty?' '+nm+' loses '+S().penalty+'.':' No penalty.')};
@@ -444,9 +435,8 @@ function submit(kind){
 }
 
 function cellHTML(p,i,d,el,mini){
-  const R=d.P[p.id],s=R.solves,open=isOpen(p.wave,el),L='#'+(i+1);
-  const top='<div class="top"><span class="num">'+L+'</span><span class="pts">'+(open?R.live:p.pts)+'</span></div>';
-  if(!open)return '<div class="cell locked" data-cell="'+p.id+'">'+top+'<div class="sub">Wave '+p.wave+'</div></div>';
+  const R=d.P[p.id],s=R.solves,L='#'+(i+1);
+  const top='<div class="top"><span class="num">'+L+'</span><span class="pts">'+R.live+'</span></div>';
   if(!s.length)return '<div class="cell" data-cell="'+p.id+'">'+top+'<div class="sub">'+(R.bounty?'+'+R.bounty+' bounty':esc(p.tier))+'</div></div>';
   const o=team(s[0].team);
   const more=s.length>1?'<span class="steal">+'+(s.length-1)+' more</span>':'';
@@ -460,13 +450,13 @@ function boardHTML(d,mini){
 }
 function lbHTML(d){
   const max=Math.max(1,...d.rank.map(t=>t.pts)),X=totals();
-  return '<div class="lb">'+d.rank.map((t,i)=>'<div class="lbr"><span class="rk">'+(i+1)+'</span><div class="lbn"><span class="nm"><i class="sw" style="background:'+esc(t.color)+'"></i>'+esc(t.name)+(d.cbSet.has(t.id)?'<span class="tag">'+fmtMult(S().cbMult)+'</span>':'')+(t.sweeps.length?'<span class="tag soft">'+t.sweeps.length+(t.sweeps.length>1?' sweeps':' sweep')+'</span>':'')+(X.multi?'<span class="tot">Total '+X.tot[t.id]+'</span>':'')+'</span><div class="track"><i style="width:'+Math.max(0,t.pts/max*100)+'%;background:'+esc(t.color)+'"></i></div></div><span class="sc">'+t.pts+'</span></div>').join('')+'</div>';
+  return '<div class="lb">'+d.rank.map((t,i)=>'<div class="lbr"><span class="rk">'+(i+1)+'</span><div class="lbn"><span class="nm"><i class="sw" style="background:'+esc(t.color)+'"></i>'+esc(t.name)+(d.cbSet.has(t.id)?'<span class="tag">'+fmtMult(S().cbMult)+'</span>':'')+(X.multi?'<span class="tot">Total '+X.tot[t.id]+'</span>':'')+'</span><div class="track"><i style="width:'+Math.max(0,t.pts/max*100)+'%;background:'+esc(t.color)+'"></i></div></div><span class="sc">'+t.pts+'</span></div>').join('')+'</div>';
 }
 function evText(e,d){
   const nm=team(e.team)?team(e.team).name:'?',L=label(e.prob),inf=d&&d.evInfo[e.id];
   if(e.type==='solve'){
     if(!inf||inf.void)return nm+' solved '+L+' (not counted)';
-    return nm+(inf.k?' solved '+L+' ('+ord(inf.k+1)+', '+inf.pct+'%)':' claimed '+L)+(inf.mult!==1?' '+fmtMult(inf.mult)+' comeback':'')+(inf.sweep?' + swept '+inf.sweep:'');
+    return nm+(inf.k?' solved '+L+' ('+ord(inf.k+1)+', '+inf.pct+'%)':' claimed '+L)+(inf.mult!==1?' '+fmtMult(inf.mult)+' comeback':'');
   }
   if(e.type==='wrong')return nm+' wrong on '+L;
   return nm+' adjustment'+(e.note?': '+e.note:'');
@@ -474,10 +464,9 @@ function evText(e,d){
 const signed=n=>(n>0?'+':'')+n;
 function rulesLine(){
   const st=S(),r=['Points by solve order: '+chainOf().map(x=>x+'%').join(' · ')];
-  if(st.cap>0)r.push('Max '+st.cap+' claims per team per wave');
+  if(st.cap>0)r.push('Max '+st.cap+' claims per team');
   if(bountyOn())r.push('Unclaimed problems +'+st.bountyAmt+' every '+st.bountyEvery+' min');
-  if(st.sweep>0)r.push('Claim a whole topic: +'+st.sweep);
-  if(cbOn())r.push('Bottom '+st.cbTeams+' teams score '+fmtMult(st.cbMult)+' once wave '+nW()+' opens');
+  if(cbOn())r.push('Bottom '+st.cbTeams+' teams score '+fmtMult(st.cbMult)+' in the last '+st.cbLast+' min');
   if(st.penalty)r.push('Wrong answer −'+st.penalty);
   return r;
 }
@@ -486,9 +475,9 @@ function judgeView(){
   const d=derive(),el=elapsed();
   const tb=state.teams.map(t=>'<button class="tbtn" data-act="team" data-i="'+t.id+'" aria-pressed="'+(ui.team===t.id)+'"><span class="sw" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</button>').join('');
   const pb=state.problems.map((p,i)=>{
-    const R=d.P[p.id],s=R.solves,open=isOpen(p.wave,el),done=ui.team!=null&&s.some(e=>e.team===ui.team),cap=ui.team!=null&&open&&capped(d,ui.team,p),dis=!open||R.closed||done||cap;
+    const R=d.P[p.id],s=R.solves,done=ui.team!=null&&s.some(e=>e.team===ui.team),cap=ui.team!=null&&capped(d,ui.team,p),dis=R.closed||done||cap;
     const own=s.map(e=>'<i style="background:'+esc(team(e.team).color)+'"></i>').join('');
-    const lab=!open?'wave '+p.wave:R.closed?'closed':done?'done':cap?'cap':(s.length?ord(s.length+1)+' '+R.nextPts:R.live);
+    const lab=R.closed?'closed':done?'done':cap?'cap':(s.length?ord(s.length+1)+' '+R.nextPts:R.live);
     return '<button class="pbtn" data-act="prob" data-n="'+p.id+'" aria-pressed="'+(ui.prob===p.id)+'"'+(dis?' disabled':'')+' title="'+esc(p.topic)+'"><b>#'+(i+1)+'</b><small>'+lab+'</small><span class="own">'+own+'</span></button>';
   }).join('');
   const sel=ui.prob!=null?prob(ui.prob):null;
@@ -496,17 +485,16 @@ function judgeView(){
   if(sel){
     const R=d.P[sel.id],pv=ui.team!=null?preview(d,ui.team,sel):null;
     let worth=R.closed?'Closed':(R.solves.length?ord(R.solves.length+1)+' solve gets '+R.nextPct+'% = '+R.nextPts:'Worth '+R.live+(R.bounty?' ('+sel.pts+' + '+R.bounty+' bounty)':''));
-    if(pv)worth=esc(team(ui.team).name)+' would get +'+pv.pts+(pv.mult!==1?' (comeback '+fmtMult(pv.mult)+')':'')+(pv.sweep?' and +'+S().sweep+' topic sweep':'');
+    if(pv)worth=esc(team(ui.team).name)+' would get +'+pv.pts+(pv.mult!==1?' (comeback '+fmtMult(pv.mult)+')':'');
     q='<div class="qbox"><div class="qhead"><span>'+label(sel.id)+' · '+esc(sel.tier)+' · '+esc(sel.topic)+'</span><span>'+worth+'</span></div>'+(sel.text?'<div class="qtext tex">'+esc(sel.text)+'</div>':'<p class="qtext sub">No problem text saved.</p>')+'<div class="abig"><span>Answer</span><b>'+(sel.answer?esc(sel.answer.split('|').join(' or ')):'No key yet')+'</b></div></div>';
   }
   const recent=state.events.slice(-6).reverse().map(e=>'<tr><td class="n">'+stamp(e.t)+'</td><td>'+esc(evText(e,d))+'</td><td class="n">'+signed(d.evPts[e.id]||0)+'</td></tr>').join('');
-  const waves=[];for(let w=2;w<=nW();w++)waves.push(isOpen(w,el)?'<span class="sub">Wave '+w+' open</span>':'<button data-act="open" data-w="'+w+'">Open wave '+w+' now</button>');
   return '<div class="cols"><div><div class="card"><h2>Record a slip</h2><h3>1. Team</h3><div class="teams">'+tb+'</div><h3>2. Problem</h3><div class="picks">'+(pb||'<p class="sub">No problems yet. Add some in Setup.</p>')+'</div><h3>3. Compare and decide</h3>'+q+
   '<div class="row" style="margin-top:10px"><button class="good big" data-act="right">Correct</button><button class="warnb big" data-act="wrong">Wrong</button></div>'+
   '<details class="auto"'+(ui.answer?' open':'')+'><summary>Or type the slip’s answer and let the app check it</summary><div class="row" style="margin-top:8px"><input id="ans" autocomplete="off" placeholder="e.g. 13/28 or 0.4643" value="'+esc(ui.answer)+'"><button class="prime" data-act="check">Check</button></div></details>'+
   (ui.msg?'<div class="msg '+ui.msg.t+'" role="status">'+esc(ui.msg.s)+'</div>':'<div class="msg" role="status">'+esc(rulesLine().join('. '))+'.</div>')+'</div>'+
   '<div class="card"><h2>Bonus or penalty</h2><p class="sub" style="margin:0 0 10px">For the lightning final or a judge’s ruling.</p><div class="row"><select id="adjT">'+state.teams.map(t=>'<option value="'+t.id+'">'+esc(t.name)+'</option>').join('')+'</select><input id="adjP" type="number" inputmode="numeric" placeholder="Points, e.g. 15 or -5" style="flex:1 1 120px"><input id="adjN" placeholder="Note (optional)" style="flex:2 1 160px"><button data-act="adj">Add</button></div></div></div>'+
-  '<div><div class="card"><h2>Leaderboard</h2>'+lbHTML(d)+'</div><div class="card"><h2>Board</h2>'+boardHTML(d,true)+(waves.length?'<div class="row" style="margin-top:12px">'+waves.join('')+'</div>':'')+'</div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Latest</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><div class="scroll"><table><tbody>'+(recent||'<tr><td class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div></div></div>';
+  '<div><div class="card"><h2>Leaderboard</h2>'+lbHTML(d)+'</div><div class="card"><h2>Board</h2>'+boardHTML(d,true)+'</div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Latest</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><div class="scroll"><table><tbody>'+(recent||'<tr><td class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div></div></div>';
 }
 const PROJ=['projector'];
 function pjTop(title){return '<div class="pj-top"><h1 class="pj-title">'+title+'</h1><div class="pj-clock"><div class="clock" id="pclock"></div><span class="hint" id="pwave"></span></div></div>';}
@@ -531,51 +519,44 @@ function pcard(p,i,d){
 }
 function projView(){
   const d=derive(),el=elapsed();
-  const open=state.problems.map((p,i)=>({p,i})).filter(x=>isOpen(x.p.wave,el));
+  const open=state.problems.map((p,i)=>({p,i}));
   const n=open.length,c=n<=4?Math.max(1,Math.min(n,2)):(n<=16?4:5);
   const grid=n?'<div class="pboard" style="--cols:'+c+'">'+open.map(x=>pcard(x.p,x.i,d)).join('')+'</div>':'<p class="sub">No problems yet. Add some in Setup.</p>';
-  let locks='';
-  for(let w=2;w<=nW();w++)if(!isOpen(w,el)){const k=state.problems.filter(p=>p.wave===w).length;if(k)locks+='<span>Wave '+w+': '+k+(k===1?' more problem':' more problems')+(state.timer.running||state.timer.elapsed?' open in <span class="cd" data-w="'+w+'">'+clk(waveAt(w)-el)+'</span>':' open '+S().waves[w-1]+' min in')+'</span>';}
-  if(locks)locks='<div class="qlock">'+locks+'</div>';
   const rules='<div class="rules">'+rulesLine().map(r=>'<span>'+esc(r)+'</span>').join('')+'</div>';
-  return '<div class="pj">'+pjTop(esc(curBoard()?curBoard().name:'Lockout Board'))+'<div class="pjmain">'+grid+locks+'</div><div class="pjside">'+lbHTML(d)+rules+'</div></div>'+pjBar()+(ui.zoom!=null?zoomHTML(d):'');
+  return '<div class="pj">'+pjTop(esc(curBoard()?curBoard().name:'Lockout Board'))+'<div class="pjmain">'+grid+'</div><div class="pjside">'+lbHTML(d)+rules+'</div></div>'+pjBar()+(ui.zoom!=null?zoomHTML(d):'');
 }
 function logView(){
   const d=derive();
   const rows=[...state.events].reverse().map(e=>'<tr><td class="n">'+stamp(e.t)+'</td><td><span class="sw" style="display:inline-block;vertical-align:-2px;margin-right:6px;background:'+esc(team(e.team).color)+'"></span>'+esc(evText(e,d))+'</td><td class="n">'+signed(d.evPts[e.id]||0)+'</td><td><button data-act="del" data-id="'+e.id+'" style="min-height:36px;padding:4px 10px">Remove</button></td></tr>').join('');
   const X=totals();
   const overall=X.multi?'<h3>Overall, all boards</h3><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Total</th></tr></thead><tbody>'+[...state.teams].sort((a,b)=>X.tot[b.id]-X.tot[a.id]||a.id-b.id).map((t,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td class="n">'+X.tot[t.id]+'</td></tr>').join('')+'</tbody></table></div>':'';
-  const stand=d.rank.map((t,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td class="n">'+t.pts+'</td><td class="n">'+(t.at?stamp(t.atT):'–')+'</td><td class="n">'+t.claims+'</td><td class="n">'+t.solves+'</td><td>'+esc(t.sweeps.join(', '))+'</td><td class="n">'+t.wrong+'</td></tr>').join('');
-  return '<div class="cols"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Every slip, newest first</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><p class="sub">Points are recalculated from this list, so removing a slip fixes everything after it.</p><div class="scroll"><table><thead><tr><th>Time</th><th>What</th><th>Pts</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Standings: '+esc(curBoard()?curBoard().name:'')+'</h2><button data-act="copyres">Copy results</button></div><p class="sub">Tied teams are ranked by who reached that score first.</p><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>Reached at</th><th>Claims</th><th>Solves</th><th>Sweeps</th><th>Wrong</th></tr></thead><tbody>'+stand+'</tbody></table></div>'+overall+(ui.copyText?'<textarea readonly>'+esc(ui.copyText)+'</textarea>':'')+'</div></div>';
+  const stand=d.rank.map((t,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td class="n">'+t.pts+'</td><td class="n">'+(t.at?stamp(t.atT):'–')+'</td><td class="n">'+t.claims+'</td><td class="n">'+t.solves+'</td><td class="n">'+t.wrong+'</td></tr>').join('');
+  return '<div class="cols"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Every slip, newest first</h2><button data-act="undo"'+(state.events.length?'':' disabled')+'>Undo last</button></div><p class="sub">Points are recalculated from this list, so removing a slip fixes everything after it.</p><div class="scroll"><table><thead><tr><th>Time</th><th>What</th><th>Pts</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="sub">Nothing recorded yet.</td></tr>')+'</tbody></table></div></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Standings: '+esc(curBoard()?curBoard().name:'')+'</h2><button data-act="copyres">Copy results</button></div><p class="sub">Tied teams are ranked by who reached that score first.</p><div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>Reached at</th><th>Claims</th><th>Solves</th><th>Wrong</th></tr></thead><tbody>'+stand+'</tbody></table></div>'+overall+(ui.copyText?'<textarea readonly>'+esc(ui.copyText)+'</textarea>':'')+'</div></div>';
 }
 function setupView(){
   const s=S(),d=derive(),n=state.problems.length;
   const arm=(k,a,b)=>ui.armed===k?b:a;
   const teams=state.teams.map(t=>'<tr><td><input type="color" value="'+esc(t.color)+'" data-f="team.color.'+t.id+'" aria-label="Colour"></td><td><input value="'+esc(t.name)+'" data-f="team.name.'+t.id+'" aria-label="Team name"></td></tr>').join('');
-  const wopts=w=>{let o='';for(let k=1;k<=nW();k++)o+='<option value="'+k+'"'+(w===k?' selected':'')+'>'+k+'</option>';return o;};
-  const probs=state.problems.map((p,i)=>{const used=state.events.some(e=>e.prob===p.id);return '<tr><td class="n"><b>#'+(i+1)+'</b><div class="mv"><button data-act="up" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="Move up">↑</button><button data-act="down" data-i="'+i+'"'+(i<n-1?'':' disabled')+' aria-label="Move down">↓</button></div></td><td><select data-f="prob.wave.'+p.id+'" aria-label="Wave">'+wopts(p.wave)+'</select></td><td><select data-f="prob.tier.'+p.id+'" aria-label="Tier">'+Object.keys(TIERS).map(t=>'<option'+(p.tier===t?' selected':'')+'>'+t+'</option>').join('')+'</select><input type="number" value="'+p.pts+'" data-f="prob.pts.'+p.id+'" aria-label="Points" style="margin-top:6px"></td><td><input value="'+esc(p.topic)+'" data-f="prob.topic.'+p.id+'" aria-label="Topic" placeholder="Topic"><textarea data-f="prob.text.'+p.id+'" aria-label="Problem text" placeholder="Problem text (optional)" class="ptext">'+esc(p.text||'')+'</textarea></td><td><input value="'+esc(p.answer)+'" data-f="prob.answer.'+p.id+'" aria-label="Answer" placeholder="e.g. 13/28" autocomplete="off"></td><td><button data-act="delp" data-id="'+p.id+'" style="min-height:36px;padding:4px 10px">'+(ui.armed==='delp'+p.id?(used?'Has scores. Click again':'Click again'):'Delete')+'</button></td></tr>';}).join('');
-  let waves='<tr><td><b>Wave 1</b></td><td class="sub">Open from the start</td><td class="n">'+plural(state.problems.filter(p=>p.wave===1).length)+'</td><td></td></tr>';
-  for(let w=2;w<=nW();w++)waves+='<tr><td><b>Wave '+w+'</b></td><td><label style="display:flex;align-items:center;gap:8px">Opens at<input type="number" min="0" value="'+s.waves[w-1]+'" data-f="wave.at.'+(w-1)+'" style="width:90px">min</label></td><td class="n">'+plural(state.problems.filter(p=>p.wave===w).length)+'</td><td><button data-act="delw" data-w="'+w+'" style="min-height:36px;padding:4px 10px">Remove</button></td></tr>';
-  const topics=Object.keys(d.groups).map(k=>state.problems.find(p=>tkey(p.topic)===k).topic.trim()+' ('+d.groups[k].length+')').join(', ');
+  const probs=state.problems.map((p,i)=>{const used=state.events.some(e=>e.prob===p.id);return '<tr><td class="n"><b>#'+(i+1)+'</b><div class="mv"><button data-act="up" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="Move up">↑</button><button data-act="down" data-i="'+i+'"'+(i<n-1?'':' disabled')+' aria-label="Move down">↓</button></div></td><td><select data-f="prob.tier.'+p.id+'" aria-label="Tier">'+Object.keys(TIERS).map(t=>'<option'+(p.tier===t?' selected':'')+'>'+t+'</option>').join('')+'</select><input type="number" value="'+p.pts+'" data-f="prob.pts.'+p.id+'" aria-label="Points" style="margin-top:6px"></td><td><input value="'+esc(p.topic)+'" data-f="prob.topic.'+p.id+'" aria-label="Topic" placeholder="Topic"><textarea data-f="prob.text.'+p.id+'" aria-label="Problem text" placeholder="Problem text (optional)" class="ptext">'+esc(p.text||'')+'</textarea></td><td><input value="'+esc(p.answer)+'" data-f="prob.answer.'+p.id+'" aria-label="Answer" placeholder="e.g. 13/28" autocomplete="off"></td><td><button data-act="delp" data-id="'+p.id+'" style="min-height:36px;padding:4px 10px">'+(ui.armed==='delp'+p.id?(used?'Has scores. Click again':'Click again'):'Delete')+'</button></td></tr>';}).join('');
   const fld=(lab,key,val,hint,attrs)=>'<label>'+lab+'<input '+(attrs||'type="number" min="0"')+' value="'+esc(val)+'" data-f="set.'+key+'">'+(hint?'<small>'+hint+'</small>':'')+'</label>';
   const scoring='<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Scoring rules</h2><div class="row"><button data-act="rules" data-v="off">All rules off</button><button data-act="rules" data-v="on">All rules on</button></div></div><p class="sub">Changing a rule recalculates every score, including slips already recorded. Set a number to 0 to turn that rule off. "All rules off" leaves basic lockout: first correct answer gets full points, second gets half, then the problem closes.</p><div class="settings">'+
     fld('Points by solve order (%)','chain',chainOf().join(', '),'1st, 2nd, 3rd… correct team. The problem closes after the last one.','type="text" inputmode="numeric"')+
-    fld('Claim cap per wave','cap',s.cap,'Most first-solves a team can take in one wave. Later solves don’t count.')+
+    fld('Claim cap','cap',s.cap,'Most problems one team can claim in a round. Solving after someone else’s claim doesn’t count.')+
     fld('Bounty points','bountyAmt',s.bountyAmt,'Added to each unclaimed problem…')+
-    fld('Bounty every (min)','bountyEvery',s.bountyEvery,'…this often, counted from when its wave opens.')+
-    fld('Comeback: bottom teams','cbTeams',s.cbTeams,'Teams in the bottom places once the last wave opens…')+
-    fld('Comeback multiplier','cbMult',s.cbMult,'…score this much more on every solve.','type="number" min="1" step="0.1"')+
-    fld('Topic sweep bonus','sweep',s.sweep,'For claiming every problem in a topic. '+(topics?'Topics now: '+esc(topics)+'.':'Needs 2+ problems with the same topic.'))+
+    fld('Bounty every (min)','bountyEvery',s.bountyEvery,'…this often, from the start of the round.')+
+    fld('Comeback: bottom teams','cbTeams',s.cbTeams,'Teams in the bottom places…')+
+    fld('Comeback multiplier','cbMult',s.cbMult,'…score this much more on every solve…','type="number" min="1" step="0.1"')+
+    fld('Comeback: last minutes','cbLast',s.cbLast,'…during this many final minutes of the round.')+
     fld('Wrong answer penalty','penalty',s.penalty,'Points lost for each wrong answer.')+
-    fld('Event length (min)','duration',s.duration,'')+
+    fld('Round length (min)','duration',s.duration,'For this board.')+
   '</div></div>';
   const bl=state.boards.map(b=>{const cur=b.id===state.cur,pc=cur?state.problems.length:(b.problems||[]).length,ec=cur?state.events.length:(b.events||[]).length;
     return '<tr><td><input value="'+esc(b.name)+'" data-f="board.name.'+b.id+'" aria-label="Board name"></td><td class="n">'+plural(pc)+'</td><td class="n">'+ec+(ec===1?' slip':' slips')+'</td><td>'+(cur?'<span class="cur">Current</span>':'<button data-act="bswitch" data-id="'+b.id+'">Switch to</button>')+'</td><td><button data-act="bdup" data-id="'+b.id+'">Duplicate</button></td><td>'+(state.boards.length>1?'<button data-act="bdel" data-id="'+b.id+'">'+(ui.armed==='bdel'+b.id?'Click again':'Delete')+'</button>':'')+'</td></tr>';}).join('');
   const presets=PRESETS.map((P,i)=>'<button data-act="preset" data-i="'+i+'">Add '+esc(P.name)+' ('+P.boards.length+' rounds: '+esc(P.desc)+')</button>').join('');
   const boardsCard='<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Boards</h2><button data-act="bnew">New blank board</button></div><p class="sub">Each board is one round with its own problems, timer and scores. Switching boards pauses the current one. Totals across boards show on the leaderboard and in the Log.</p><div class="scroll"><table class="bt"><tbody>'+bl+'</tbody></table></div><h3>Ready-made problem sets</h3><div class="row">'+presets+'</div><p class="sub">Problems written for Grade 9, with every answer checked. Adding a set creates one board per round.</p></div>';
-  return boardsCard+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems: '+esc(curBoard()?curBoard().name:'')+'</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Problems with the same topic form a sweep group. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Wave</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="6" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
-  '<div class="cols" style="margin-top:20px"><div>'+scoring+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Waves</h2><button data-act="addw">Add wave</button></div><p class="sub">Times count from the start of the event. Removing a wave moves its problems to the wave before.</p><div class="scroll"><table><tbody>'+waves+'</tbody></table></div></div></div>'+
-  '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game clears this board’s scores, timer and waves, and keeps its problems. Reset everything wipes all boards.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
+  return boardsCard+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems: '+esc(curBoard()?curBoard().name:'')+'</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Tier and points</th><th>Topic and problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="5" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
+  '<div class="cols" style="margin-top:20px"><div>'+scoring+'</div>'+
+  '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game clears this board’s scores and timer, and keeps its problems. Reset everything wipes all boards.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
   '<div class="card"><h2>Sample data</h2><p class="sub" style="margin-top:0">For trying the app out. Both replace your problems; your teams and scoring rules stay.</p><div class="row"><button data-act="samplegame">'+arm('samplegame','Load sample game','Click again: replaces problems and scores')+'</button><button data-act="sampleprobs">'+arm('sampleprobs','Load sample problems only','Click again: replaces all problems')+'</button></div><p class="sub">The sample game is 16 problems with 9 minutes of play already recorded. Problems only keeps your current scores.</p></div>'+
   '<div class="card"><h2>Teams</h2><p class="sub" style="margin-top:0">Named after the playing cards kids draw at the door.</p><table><tbody>'+teams+'</tbody></table></div></div></div>';
 }
@@ -609,12 +590,12 @@ function fit(){
 }
 function waveHint(el){
   if(el>=dur())return "Time's up";
-  let next=null;for(let w=2;w<=nW();w++)if(!isOpen(w,el)&&(!next||waveAt(w)<next.at))next={w,at:waveAt(w)};
-  const run=state.timer.running?'':(el>0?'Paused · ':'Not started · ');
-  return run+(next?'Wave '+next.w+' opens in '+clk(next.at-el):(nW()>1?'All waves open':'Event clock'));
+  const run=state.timer.running?'':(el>0?'Paused':'Not started');
+  let cb='';if(cbOn()){const c=cbStart();cb=el>=c?'Comeback on':'Comeback in '+clk(c-el);}
+  return [run,cb].filter(Boolean).join(' · ');
 }
-function bountyStep(el){if(!bountyOn())return 0;let n=0;for(let w=1;w<=nW();w++){const o=openAt(w);if(isFinite(o)&&el>=o)n+=Math.floor((el-o)/(S().bountyEvery*60000));}return n;}
-function sigOf(el){let s='';for(let w=2;w<=nW();w++)s+=isOpen(w,el)?'1':'0';return s+'|'+(el>=dur())+'|'+state.timer.running+'|'+bountyStep(el);}
+function bountyStep(el){return bountyOn()?Math.floor(el/(S().bountyEvery*60000)):0;}
+function sigOf(el){return (el>=cbStart())+'|'+(el>=dur())+'|'+state.timer.running+'|'+bountyStep(el);}
 function tick(noRender){
   const el=elapsed();
   if(state.timer.running&&el>=dur()){state.timer.elapsed=dur();state.timer.running=false;commit(false);}
@@ -623,11 +604,10 @@ function tick(noRender){
     const prev=ui.sig;ui.sig=sig;
     if(prev&&!noRender){
       if(PROJ.includes(view)){
-        const pw=prev.split('|')[0],nw=sig.split('|')[0];let opened=0;
-        if(pw.length===nw.length)for(let i=0;i<nw.length;i++)if(pw[i]==='0'&&nw[i]==='1')opened=i+2;
-        if(opened)banner('Wave '+opened+' is open!'+(opened===nW()&&cbOn()?' Comeback '+fmtMult(S().cbMult)+' for the bottom '+S().cbTeams:''),'var(--acc)','#fff');
-        else if(prev.split('|')[1]==='false'&&el>=dur())banner("Time's up! Slips in now.",'var(--ink)','var(--bg)');
-        else if(+sig.split('|')[3]>+prev.split('|')[3]&&state.problems.some(p=>isOpen(p.wave,el)&&!state.events.some(e=>e.type==='solve'&&e.prob===p.id)))banner('Bounty! Unclaimed problems +'+S().bountyAmt,'var(--acc)','#fff');
+        const pv=prev.split('|'),nv=sig.split('|');
+        if(pv[0]==='false'&&nv[0]==='true')banner('Comeback! Bottom '+S().cbTeams+' teams score '+fmtMult(S().cbMult),'var(--acc)','#fff');
+        else if(pv[1]==='false'&&nv[1]==='true')banner("Time's up! Slips in now.",'var(--ink)','var(--bg)');
+        else if(+nv[3]>+pv[3]&&state.problems.some(p=>!state.events.some(e=>e.type==='solve'&&e.prob===p.id)))banner('Bounty! Unclaimed problems +'+S().bountyAmt,'var(--acc)','#fff');
       }
       return render();
     }
@@ -636,7 +616,6 @@ function tick(noRender){
   for(const id of ['clock','pclock']){const c=document.getElementById(id);if(c){c.textContent=txt;c.classList.toggle('low',low);}}
   const h=waveHint(el);
   for(const id of ['wavehint','pwave']){const c=document.getElementById(id);if(c)c.textContent=h;}
-  document.querySelectorAll('.cd').forEach(c=>c.textContent=clk(waveAt(+c.dataset.w)-el));
   const b=document.getElementById('tbtn');b.textContent=state.timer.running?'Pause':(el>=dur()?'Done':(el>0?'Resume':'Start'));b.disabled=el>=dur()&&!state.timer.running;
 }
 let bnT=null;
@@ -648,7 +627,7 @@ function announce(){
   const last=state.events[state.events.length-1],id=last?last.id:0;
   if(ui.lastSeen!==null&&id>ui.lastSeen&&PROJ.includes(view)&&last&&last.type==='solve'){
     const t=team(last.team),inf=derive().evInfo[last.id];
-    if(inf&&!inf.void)banner(t.name+(inf.k?' solves ':' claims ')+label(last.prob)+'  +'+inf.base+(inf.sweep?'  ·  '+inf.sweep+' sweep +'+S().sweep+'!':''),t.color,inkOn(t.color));
+    if(inf&&!inf.void)banner(t.name+(inf.k?' solves ':' claims ')+label(last.prob)+'  +'+inf.base,t.color,inkOn(t.color));
     const c=document.querySelector('[data-cell="'+last.prob+'"]');if(c){c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');}
   }
   ui.lastSeen=id;
@@ -656,8 +635,8 @@ function announce(){
 function setView(){let h=location.hash.slice(1);if(h==='questions')h='projector';view=['judge','projector','log','setup'].includes(h)?h:'judge';ui.copyText='';ui.restore=false;if(!PROJ.includes(view))ui.zoom=null;render();}
 function arm(k,fn){if(ui.armed===k){ui.armed=null;fn();}else{ui.armed=k;render();setTimeout(()=>{if(ui.armed===k){ui.armed=null;render();}},4000);}}
 async function copy(text){ui.copyText=text;try{await navigator.clipboard.writeText(text);ui.copyText='';ui.msg={t:'ok',s:'Copied.'};}catch(e){}render();}
-function results(){const d=derive(),X=totals();return (X.multi?'Overall\n'+[...state.teams].sort((a,b)=>X.tot[b.id]-X.tot[a.id]||a.id-b.id).map((t,i)=>(i+1)+'. '+t.name+' — '+X.tot[t.id]+' pts').join('\n')+'\n\n':'')+(curBoard()?curBoard().name:'Lockout Board')+'\n'+d.rank.map((t,i)=>(i+1)+'. '+t.name+' — '+t.pts+' pts ('+t.claims+' claims, '+t.solves+' solves'+(t.sweeps.length?', swept '+t.sweeps.join(' and '):'')+')').join('\n');}
-function newGame(){state.events=[];state.seq=0;state.timer={running:false,startedAt:0,elapsed:0};state.openedAt={};state.sample=false;ui.msg=null;ui.lastSeen=0;commit();}
+function results(){const d=derive(),X=totals();return (X.multi?'Overall\n'+[...state.teams].sort((a,b)=>X.tot[b.id]-X.tot[a.id]||a.id-b.id).map((t,i)=>(i+1)+'. '+t.name+' — '+X.tot[t.id]+' pts').join('\n')+'\n\n':'')+(curBoard()?curBoard().name:'Lockout Board')+'\n'+d.rank.map((t,i)=>(i+1)+'. '+t.name+' — '+t.pts+' pts ('+t.claims+' claims, '+t.solves+' solves)').join('\n');}
+function newGame(){state.events=[];state.seq=0;state.timer={running:false,startedAt:0,elapsed:0};state.sample=false;ui.msg=null;ui.lastSeen=0;commit();}
 const plural=n=>n+(n===1?' problem':' problems');
 function nextId(){return state.problems.reduce((m,p)=>Math.max(m,p.id),0)+1;}
 function keepScroll(fn){const y=window.scrollY;fn();window.scrollTo(0,y);}
@@ -669,7 +648,6 @@ document.addEventListener('click',e=>{
   else if(a==='prob'){ui.prob=+b.dataset.n;ui.msg=null;render();}
   else if(a==='check'||a==='right'||a==='wrong')submit(a);
   else if(a==='timer'){const t=state.timer;if(t.running){t.elapsed=elapsed();t.running=false;}else if(elapsed()<dur()){t.startedAt=Date.now();t.running=true;}commit();}
-  else if(a==='open'){const w=+b.dataset.w;if(state.openedAt[w]==null)state.openedAt[w]=elapsed();commit();}
   else if(a==='undo'){const txt=state.events.length?evText(state.events[state.events.length-1],derive()):'';const x=state.events.pop();if(x)ui.msg={t:'warn',s:'Undid: '+txt+'.'};commit();}
   else if(a==='del'){state.events=state.events.filter(x=>x.id!==+b.dataset.id);commit();}
   else if(a==='adj'){const p=parseInt(document.getElementById('adjP').value,10);if(!p){ui.msg={t:'warn',s:'Enter a number of points for the adjustment.'};return render();}const ti=+document.getElementById('adjT').value;addEvent({type:'adjust',team:ti,prob:null,pts:p,t:elapsed(),note:document.getElementById('adjN').value.trim()});ui.msg={t:'ok',s:team(ti).name+' '+(p>0?'+':'')+p+' points.'};commit();}
@@ -686,11 +664,9 @@ document.addEventListener('click',e=>{
   else if(a==='newgame2')newGame();
   else if(a==='resettimer')arm('resettimer',()=>{state.timer={running:false,startedAt:0,elapsed:0};state.openedAt={};commit();});
   else if(a==='factory')arm('factory',()=>{state=fresh(false);ui.lastSeen=0;ui.prob=null;commit();});
-  else if(a==='addp'){keepScroll(()=>{const last=state.problems[state.problems.length-1];state.problems.push({id:nextId(),wave:last?last.wave:1,tier:'Easy',pts:TIERS.Easy,topic:'',text:'',answer:''});commit();});}
+  else if(a==='addp'){keepScroll(()=>{const last=state.problems[state.problems.length-1];state.problems.push({id:nextId(),wave:1,tier:'Easy',pts:TIERS.Easy,topic:'',text:'',answer:''});commit();});}
   else if(a==='delp'){const id=+b.dataset.id;keepScroll(()=>arm('delp'+id,()=>{state.problems=state.problems.filter(p=>p.id!==id);if(ui.prob===id)ui.prob=null;commit();}));}
   else if(a==='up'||a==='down'){const i=+b.dataset.i,j=a==='up'?i-1:i+1,P=state.problems;if(j>=0&&j<P.length){[P[i],P[j]]=[P[j],P[i]];keepScroll(()=>commit());}}
-  else if(a==='addw'){const W=state.settings.waves,last=W[W.length-1]||0;W.push(Math.min(state.settings.duration,last+10));keepScroll(()=>commit());}
-  else if(a==='delw'){const w=+b.dataset.w;state.settings.waves.splice(w-1,1);state.problems.forEach(p=>{if(p.wave>=w)p.wave=Math.max(1,p.wave-1);});const oa={};for(const k in state.openedAt){const x=+k;if(x<w)oa[x]=state.openedAt[k];else if(x>w)oa[x-1]=state.openedAt[k];}state.openedAt=oa;keepScroll(()=>commit());}
   else if(a==='bswitch'){activate(+b.dataset.id);commit();}
   else if(a==='bnew'){newBoard();keepScroll(()=>commit());}
   else if(a==='bdup'){dupBoard(+b.dataset.id);keepScroll(()=>commit());}
@@ -713,11 +689,10 @@ document.addEventListener('change',e=>{
   const [k,field,idx]=f.split('.'),v=e.target.value;
   if(k==='board'){const b=state.boards.find(x=>x.id===+idx);if(b)b.name=v.trim()||b.name;commit(false);const y=window.scrollY;render();window.scrollTo(0,y);return;}
   if(k==='team'){const t=team(+idx);if(field==='name')t.name=v.trim()||t.name;else t.color=v;}
-  else if(k==='prob'){const p=prob(+idx);if(!p)return;if(field==='wave')p.wave=+v;else if(field==='tier'){p.tier=v;p.pts=TIERS[v];const r=e.target.closest('tr').querySelector('[data-f^="prob.pts"]');if(r)r.value=p.pts;}else if(field==='pts')p.pts=Math.max(0,parseInt(v,10)||0);else p[field]=v;if(field==='text'||field==='answer')state.sampleProblems=false;}
-  else if(k==='wave'){state.settings.waves[+idx]=Math.max(0,parseFloat(v)||0);}
+  else if(k==='prob'){const p=prob(+idx);if(!p)return;if(field==='tier'){p.tier=v;p.pts=TIERS[v];const r=e.target.closest('tr').querySelector('[data-f^="prob.pts"]');if(r)r.value=p.pts;}else if(field==='pts')p.pts=Math.max(0,parseInt(v,10)||0);else p[field]=v;if(field==='text'||field==='answer')state.sampleProblems=false;}
   else if(k==='set'){
     if(field==='chain'){const c=v.split(/[^0-9.]+/).filter(Boolean).map(Number).filter(x=>isFinite(x)&&x>=0);if(c.length)S().chain=c;e.target.value=chainOf().join(', ');}
-    else{let n=Math.max(0,parseFloat(v)||0);if(field==='duration')n=Math.max(1,n);if(field==='cbMult')n=Math.max(1,n);if(['cap','cbTeams','bountyAmt','sweep','penalty'].includes(field))n=Math.round(n);S()[field]=n;e.target.value=n;}
+    else{let n=Math.max(0,parseFloat(v)||0);if(field==='duration')n=Math.max(1,n);if(field==='cbMult')n=Math.max(1,n);if(['cap','cbTeams','bountyAmt','penalty'].includes(field))n=Math.round(n);S()[field]=n;e.target.value=n;}
   }
   commit(false);
   if(k==='set'||k==='prob'&&field==='topic'){const y=window.scrollY;render();window.scrollTo(0,y);}

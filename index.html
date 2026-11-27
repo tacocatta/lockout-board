@@ -250,7 +250,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 
 const RULES_OFF={penalty:0,chain:[100,50],cap:0,bountyAmt:0,bountyEvery:5,cbTeams:0,cbMult:1.5,cbLast:5};
 const RULES_ON={penalty:0,chain:[100,100,50,25],cap:4,bountyAmt:5,bountyEvery:5,cbTeams:3,cbMult:1.5,cbLast:5};
-const DEF={duration:15,waves:[0],...RULES_OFF};
+const DEF={duration:15,waves:[0],shuffle:true,...RULES_OFF};
 function sampleProblems(){return SAMPLE.map(([wave,tier,topic,text,answer],i)=>({id:i+1,wave,tier,pts:TIERS[tier],topic,text,answer}));}
 function fresh(sample){
   const s={v:4,boards:[{id:1,name:'Board 1'}],cur:1,teams:NAMES.map((n,i)=>({id:i,name:n,color:COLORS[i]})),problems:sampleProblems(),
@@ -366,7 +366,7 @@ function preview(d,ti,p){
 }
 
 /* Boards: the current board's data lives at the top level of state; other boards are stored in state.boards. */
-const BOARD_KEYS=['problems','events','seq','timer','openedAt','sample','sampleProblems'];
+const BOARD_KEYS=['problems','events','seq','timer','openedAt','sample','sampleProblems','seed'];
 const clone=x=>JSON.parse(JSON.stringify(x));
 const curBoard=()=>state.boards.find(b=>b.id===state.cur);
 function snapshot(){const b={};BOARD_KEYS.forEach(k=>b[k]=state[k]);b.waves=S().waves;b.duration=S().duration;return b;}
@@ -513,6 +513,12 @@ function zoomHTML(d){
   const i=state.problems.indexOf(p),R=d.P[p.id],tc=R.solves.length?team(R.solves[0].team).color:'';
   return '<div class="zoom" data-act="unzoom"><div class="zcard"'+(tc?' style="--tc:'+esc(tc)+'"':'')+'><div class="qc-top"><b>#'+(i+1)+'</b><span>'+esc(p.tier)+'</span><span class="qpts">'+R.live+'</span></div><div class="ztext tex">'+(p.text?esc(p.text):'<span class="sub">No problem text saved.</span>')+'</div><div class="qc-st">'+statusText(p,d)+'</div></div></div>';
 }
+function shuffled(list){
+  let x=(state.seed!=null?state.seed:(state.cur||1)*7919)%2147483646+1;
+  const a=list.slice();
+  for(let i=a.length-1;i>0;i--){x=x*16807%2147483647;const j=x%(i+1);[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
 function pcard(p,i,d){
   const R=d.P[p.id],o=R.solves.length?team(R.solves[0].team):null;
   const st=o?' style="background:'+esc(o.color)+';color:'+inkOn(o.color)+';border-color:'+esc(o.color)+'"':'';
@@ -521,7 +527,8 @@ function pcard(p,i,d){
 }
 function projView(){
   const d=derive(),el=elapsed();
-  const open=state.problems.map((p,i)=>({p,i}));
+  let open=state.problems.map((p,i)=>({p,i}));
+  if(S().shuffle)open=shuffled(open);
   const n=open.length,c=n<=4?Math.max(1,Math.min(n,2)):(n<=16?4:5);
   const grid=n?'<div class="pboard" style="--cols:'+c+'">'+open.map(x=>pcard(x.p,x.i,d)).join('')+'</div>':'<p class="sub">No problems yet. Add some in Setup.</p>';
   const rules='<div class="rules">'+rulesLine().map(r=>'<span>'+esc(r)+'</span>').join('')+'</div>';
@@ -555,7 +562,7 @@ function setupView(){
   const bl=state.boards.map(b=>{const cur=b.id===state.cur,pc=cur?state.problems.length:(b.problems||[]).length,ec=cur?state.events.length:(b.events||[]).length;
     return '<tr><td><input value="'+esc(b.name)+'" data-f="board.name.'+b.id+'" aria-label="Board name"></td><td class="n">'+plural(pc)+'</td><td class="n">'+ec+(ec===1?' slip':' slips')+'</td><td>'+(cur?'<span class="cur">Current</span>':'<button data-act="bswitch" data-id="'+b.id+'">Switch to</button>')+'</td><td><button data-act="bdup" data-id="'+b.id+'">Duplicate</button></td><td>'+(state.boards.length>1?'<button data-act="bdel" data-id="'+b.id+'">'+(ui.armed==='bdel'+b.id?'Click again':'Delete')+'</button>':'')+'</td></tr>';}).join('');
   const presets=PRESETS.map((P,i)=>'<button data-act="preset" data-i="'+i+'">Add '+esc(P.name)+' ('+P.boards.length+' rounds: '+esc(P.desc)+')</button>').join('');
-  const boardsCard='<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Boards</h2><button data-act="bnew">New blank board</button></div><p class="sub">Each board is one round with its own problems, timer and scores. Switching boards pauses the current one. Totals across boards show on the leaderboard and in the Log.</p><div class="scroll"><table class="bt"><tbody>'+bl+'</tbody></table></div><h3>Ready-made problem sets</h3><div class="row">'+presets+'</div><p class="sub">Problems written for Grade 9, with every answer checked. Adding a set creates one board per round.</p></div>';
+  const boardsCard='<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Boards</h2><button data-act="bnew">New blank board</button></div><p class="sub">Each board is one round with its own problems, timer and scores. Switching boards pauses the current one. Totals across boards show on the leaderboard and in the Log.</p><div class="scroll"><table class="bt"><tbody>'+bl+'</tbody></table></div><div class="row" style="margin-top:12px"><label style="display:flex;align-items:center;gap:10px;font-size:16px;color:var(--ink)"><input type="checkbox" data-f="set.shuffle" style="width:22px;min-height:22px"'+(S().shuffle?' checked':'')+'>Shuffle card order on the projector</label><button data-act="reshuffle"'+(S().shuffle?'':' disabled')+'>Reshuffle this board</button></div><p class="sub">Cards keep their numbers, so slips and the answer key still match. Each board keeps its own order until you reshuffle.</p><h3>Ready-made problem sets</h3><div class="row">'+presets+'</div><p class="sub">Problems written for Grade 9, with every answer checked. Adding a set creates one board per round.</p></div>';
   return boardsCard+'<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Problems: '+esc(curBoard()?curBoard().name:'')+'</h2><div class="row"><button data-act="addp">Add problem</button></div></div>'+(state.sampleProblems?'<p class="msg warn">These are sample problems for testing. Replace them with your own before Friday.</p>':'')+'<p class="sub">Write math in LaTeX between dollar signs, like $\\frac{1}{x}$ or $2^{10}$ (use $$ … $$ for a centred line). Check accepts equivalent numbers (1/2 = 0.5). For more than one accepted answer, separate them with | as in Sunday|sun. Board numbers follow this order. Changes save as you go.</p><div class="scroll"><table class="ptable"><thead><tr><th>#</th><th>Tier and points</th><th>Problem</th><th>Answer</th><th></th></tr></thead><tbody>'+(probs||'<tr><td colspan="5" class="sub">No problems. Add one, or load the samples.</td></tr>')+'</tbody></table></div><div class="row" style="margin-top:12px"><button data-act="addp">Add problem</button></div></div>'+
   '<div class="cols" style="margin-top:20px"><div>'+scoring+'</div>'+
   '<div><div class="card"><h2>Start over and backups</h2><div class="row"><button class="prime" data-act="newgame">'+arm('newgame','Start fresh game','Click again to clear scores')+'</button><button data-act="resettimer">'+arm('resettimer','Reset timer','Click again to reset timer')+'</button><button data-act="factory">'+arm('factory','Reset everything','Click again: wipes problems and names')+'</button></div><p class="sub">Start fresh game clears this board’s scores and timer, and keeps its problems. Reset everything wipes all boards.</p><h3>Backup</h3><div class="row"><button data-act="backup">Copy backup</button><button data-act="restoreopen">Restore from backup</button></div>'+(ui.copyText&&!ui.restore?'<textarea readonly id="bk">'+esc(ui.copyText)+'</textarea>':'')+(ui.restore?'<textarea id="rs" placeholder="Paste a backup here"></textarea><div class="row" style="margin-top:8px"><button class="prime" data-act="restore">Load backup</button><button data-act="restorecancel">Cancel</button></div>':'')+'</div>'+
@@ -674,6 +681,7 @@ document.addEventListener('click',e=>{
   else if(a==='bdup'){dupBoard(+b.dataset.id);keepScroll(()=>commit());}
   else if(a==='bdel'){const id=+b.dataset.id;keepScroll(()=>arm('bdel'+id,()=>{delBoard(id);commit();}));}
   else if(a==='rules'){Object.assign(S(),clone(b.dataset.v==='on'?RULES_ON:RULES_OFF));ui.msg={t:'ok',s:b.dataset.v==='on'?'All scoring rules on.':'All scoring rules off.'};keepScroll(()=>commit());}
+  else if(a==='reshuffle'){state.seed=Math.floor(Math.random()*2147483000)+1;ui.msg={t:'ok',s:'Projector order reshuffled.'};keepScroll(()=>commit());}
   else if(a==='preset'){addPreset(+b.dataset.i);commit();}
   else if(a==='sampleprobs')keepScroll(()=>arm('sampleprobs',()=>loadSample(false)));
   else if(a==='samplegame')keepScroll(()=>arm('samplegame',()=>loadSample(true)));
@@ -693,7 +701,8 @@ document.addEventListener('change',e=>{
   if(k==='team'){const t=team(+idx);if(field==='name')t.name=v.trim()||t.name;else t.color=v;}
   else if(k==='prob'){const p=prob(+idx);if(!p)return;if(field==='tier'){p.tier=v;p.pts=TIERS[v];const r=e.target.closest('tr').querySelector('[data-f^="prob.pts"]');if(r)r.value=p.pts;}else if(field==='pts')p.pts=Math.max(0,parseInt(v,10)||0);else p[field]=v;if(field==='text'||field==='answer')state.sampleProblems=false;}
   else if(k==='set'){
-    if(field==='chain'){const c=v.split(/[^0-9.]+/).filter(Boolean).map(Number).filter(x=>isFinite(x)&&x>=0);if(c.length)S().chain=c;e.target.value=chainOf().join(', ');}
+    if(field==='shuffle'){S().shuffle=e.target.checked;}
+    else if(field==='chain'){const c=v.split(/[^0-9.]+/).filter(Boolean).map(Number).filter(x=>isFinite(x)&&x>=0);if(c.length)S().chain=c;e.target.value=chainOf().join(', ');}
     else{let n=Math.max(0,parseFloat(v)||0);if(field==='duration')n=Math.max(1,n);if(field==='cbMult')n=Math.max(1,n);if(['cap','cbTeams','bountyAmt','penalty'].includes(field))n=Math.round(n);S()[field]=n;e.target.value=n;}
   }
   commit(false);

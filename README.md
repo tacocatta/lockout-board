@@ -24,13 +24,13 @@ The app starts with these recommended rules (change them in **Setup → Scoring 
 - **Comeback:** in the last 4 minutes, the bottom 3 teams score ×1.5.
 - **No penalty** for wrong answers.
 
-Ties go to the team that reached that score first. The warm-up is practice and doesn't count toward the overall total.
+Ties go to the team that reached that score first.
 
 ## Running it
 
 1. Open the app on the judges' laptop (**Judge** view).
 2. Open it in a second tab, switch to **Projector**, move it to the projector screen and press **Full screen**.
-3. In **Setup → Boards**, press **Add Set 1** for a 5-minute warm-up and three 15-minute rounds, or write your own problems in **Setup**.
+3. In **Setup → Boards**, press **Add Set 1** for three 13-minute rounds, or write your own problems in **Setup**.
 4. Pick the round from the **Board** menu and press **Start**.
 5. For each slip, pick the team and the problem, compare the slip with the answer shown, and press **Correct** or **Wrong**.
 
